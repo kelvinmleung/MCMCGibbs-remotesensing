@@ -1,0 +1,91 @@
+{
+    "ISOFIT_base": "/home/drt/src/isofit-dev",
+    "forward_model": {
+        "instrument": {
+            "integrations": 400,
+            "parametric_noise_file": "/home/drt/src/isofit-dev/data/avirisng_noise.txt",
+            "unknowns": {
+                "uncorrelated_radiometric_uncertainty": 0.02
+            },
+            "wavelength_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/data/wavelengths.txt"
+        },
+        "radiative_transfer": {
+            "lut_grid": {
+                "H2OSTR": [
+                    0.01,
+                    0.53,
+                    1.05,
+                    1.57,
+                    2.09,
+                    2.61,
+                    3.13,
+                    3.65,
+                    4.17,
+                    4.69
+                ]
+            },
+            "radiative_transfer_engines": {
+                "vswir": {
+                    "engine_base_dir": "/shared/MODTRAN6/MODTRAN6.0.0/",
+                    "engine_name": "modtran",
+                    "lut_names": [
+                        "H2OSTR"
+                    ],
+                    "lut_path": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/lut_h2o",
+                    "statevector_names": [
+                        "H2OSTR"
+                    ],
+                    "template_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/config/ang20140612t215931_h2o_tpl.json"
+                }
+            },
+            "statevector": {
+                "H2OSTR": {
+                    "bounds": [
+                        0.01,
+                        4.69
+                    ],
+                    "init": 1.1800000000000002,
+                    "prior_mean": 1.5,
+                    "prior_sigma": 100.0,
+                    "scale": 0.01
+                }
+            },
+            "unknowns": {
+                "H2O_ABSCO": 0.0
+            }
+        },
+        "surface": {
+            "select_on_init": true,
+            "surface_category": "multicomponent_surface",
+            "surface_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/data/surface.mat"
+        }
+    },
+    "implementation": {
+        "inversion": {
+            "windows": [
+                [
+                    400.0,
+                    1300.0
+                ],
+                [
+                    1450,
+                    1780.0
+                ],
+                [
+                    2050.0,
+                    2450.0
+                ]
+            ]
+        },
+        "n_cores": 40,
+        "ray_temp_dir": "/tmp/ray"
+    },
+    "input": {
+        "loc_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_loc",
+        "measured_radiance_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_rdn",
+        "obs_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_obs"
+    },
+    "output": {
+        "estimated_state_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/output/ang20140612t215931_subs_h2o"
+    }
+}

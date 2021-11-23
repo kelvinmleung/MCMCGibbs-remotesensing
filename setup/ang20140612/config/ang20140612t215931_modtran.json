@@ -1,0 +1,109 @@
+{
+    "ISOFIT_base": "/home/drt/src/isofit-dev",
+    "forward_model": {
+        "instrument": {
+            "integrations": 400,
+            "parametric_noise_file": "/home/drt/src/isofit-dev/data/avirisng_noise.txt",
+            "unknowns": {
+                "uncorrelated_radiometric_uncertainty": 0.02
+            },
+            "wavelength_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/data/wavelengths.txt"
+        },
+        "radiative_transfer": {
+            "lut_grid": {
+                "AERFRAC_2": [
+                    0.001,
+                    0.16733333333333333,
+                    0.33366666666666667,
+                    0.5
+                ],
+                "H2OSTR": [
+                    1.3100563704967498,
+                    1.3791938215494155,
+                    1.4483312726020814,
+                    1.5174687236547473,
+                    1.586606174707413
+                ]
+            },
+            "radiative_transfer_engines": {
+                "vswir": {
+                    "aerosol_model_file": "/home/drt/src/isofit-dev/data/aerosol_model.txt",
+                    "aerosol_template_file": "/home/drt/src/isofit-dev/data/aerosol_template.json",
+                    "engine_base_dir": "/shared/MODTRAN6/MODTRAN6.0.0/",
+                    "engine_name": "modtran",
+                    "lut_names": [
+                        "H2OSTR",
+                        "AERFRAC_2"
+                    ],
+                    "lut_path": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/lut_full",
+                    "statevector_names": [
+                        "H2OSTR",
+                        "AERFRAC_2"
+                    ],
+                    "template_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/config/ang20140612t215931_modtran_tpl.json"
+                }
+            },
+            "statevector": {
+                "AERFRAC_2": {
+                    "bounds": [
+                        0.001,
+                        0.5
+                    ],
+                    "init": 0.0509,
+                    "prior_mean": 0.0509,
+                    "prior_sigma": 10.0,
+                    "scale": 1
+                },
+                "H2OSTR": {
+                    "bounds": [
+                        1.3100563704967498,
+                        1.586606174707413
+                    ],
+                    "init": 1.4828999981284143,
+                    "prior_mean": 1.4828999981284143,
+                    "prior_sigma": 100.0,
+                    "scale": 0.01
+                }
+            },
+            "unknowns": {
+                "H2O_ABSCO": 0.0
+            }
+        },
+        "surface": {
+            "select_on_init": true,
+            "surface_category": "multicomponent_surface",
+            "surface_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/data/surface.mat"
+        }
+    },
+    "implementation": {
+        "inversion": {
+            "windows": [
+                [
+                    400.0,
+                    1300.0
+                ],
+                [
+                    1450,
+                    1780.0
+                ],
+                [
+                    2050.0,
+                    2450.0
+                ]
+            ]
+        },
+        "n_cores": 40,
+        "ray_temp_dir": "/tmp/ray"
+    },
+    "input": {
+        "loc_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_loc",
+        "measured_radiance_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_rdn",
+        "obs_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/input/ang20140612t215931_subs_obs"
+    },
+    "output": {
+        "atmospheric_coefficients_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/output/ang20140612t215931_subs_atm",
+        "estimated_reflectance_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/output/ang20140612t215931_subs_rfl",
+        "estimated_state_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/output/ang20140612t215931_subs_state",
+        "posterior_uncertainty_file": "/beegfs/scratch/drt/20200724_JPL_Modeldiscrepancy/ang20140612t215931_working/output/ang20140612t215931_subs_uncert"
+    }
+}

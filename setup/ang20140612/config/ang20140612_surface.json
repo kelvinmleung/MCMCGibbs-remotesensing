@@ -1,0 +1,53 @@
+{
+  "output_model_file": "../data/surface.mat",
+  "wavelength_file":   "../data/wavelengths.txt",
+  "normalize":"Euclidean",
+  "reference_windows":[[400,1300],[1450,1780],[2050,2450]],
+  "sources":
+    [
+      {
+        "input_spectrum_files":
+          [
+            "../../../../isofit/data/reflectance/surface_model_ucsb"
+          ],
+        "n_components": 8,
+        "windows": [
+          {
+            "interval":[300,400],
+            "regularizer":1e-4,
+            "correlation":"EM"
+          },
+          {
+            "interval":[400,1300],
+            "regularizer":1e-6,
+            "correlation":"EM"
+          },
+          {
+            "interval":[1300,1450],
+            "regularizer":1e-4,
+            "correlation":"EM"
+          },
+          {
+            "interval":[1450,1780],
+            "regularizer":1e-6,
+            "correlation":"EM"
+          },
+          {
+            "interval":[1780,2050],
+            "regularizer":1e-4,
+            "correlation":"EM"
+          },
+          {
+            "interval":[2050,2450],
+            "regularizer":1e-6,
+            "correlation":"EM"
+          },
+          {
+            "interval":[2450,2550],
+            "regularizer":1e-4,
+            "correlation":"EM"
+          }
+        ]
+      }
+  ]
+}
