@@ -24,7 +24,6 @@ class Setup:
         print('Setup in progress...')
         self.wavelengths = wv
         self.reflectance = ref
-        # np.save('x0isofit/atmSample.npy', [atm[0], atm[1]]) # set for Isofit initialization
 
         # specify storage directories 
         self.setupDir = setupDir
@@ -39,9 +38,16 @@ class Setup:
         self.geom = Geometry()
         self.mu_x, self.gamma_x = self.getPrior(fullconfig)
 
+        self.luts = np.load('lut_grid.npy').item()
+        
         # get Isofit noise model and simulate radiance
-        atmSim = [0.05, 1.5] 
+        atmSim = [0.1, 1.5] 
         self.truth = np.concatenate((ref, atmSim))
+        # self.truth = np.random.multivariate_normal(self.mu_x, self.gamma_x) ############
+        # self.truth[-2:] = atmSim
+        # plt.plot(self.truth[:-2])
+        # plt.show()
+
         rad = self.fm.calc_rdn(self.truth, self.geom)
         self.noisecov = self.fm.Seps(self.truth, rad, self.geom)
         eps = np.random.multivariate_normal(np.zeros(len(rad)), self.noisecov)
@@ -51,7 +57,7 @@ class Setup:
             self.radiance =  self.radianceSim
         else:
             self.radiance = radiance
-    
+        
         # inversion using simulated radiance
         self.isofitMuPos, self.isofitGammaPos = self.invModel(self.radiance)
         self.nx = self.truth.shape[0]
@@ -67,16 +73,18 @@ class Setup:
                 bands = bands + [i]
         self.bands = bands
         self.bandsX = bands + [self.nx-2,self.nx-1]
+        
 
-    def saveConfig(self):
-        np.save(self.mcmcDir + 'wavelength.npy', self.wavelengths)
-        np.save(self.mcmcDir + 'radiance.npy', self.radiance)
-        np.save(self.mcmcDir + 'truth.npy', self.truth)
-        np.save(self.mcmcDir + 'bands.npy', self.bands)
-        np.save(self.mcmcDir + 'mu_x.npy', self.mu_x)
-        np.save(self.mcmcDir + 'gamma_x.npy', self.gamma_x)
-        np.save(self.mcmcDir + 'isofitMuPos.npy', self.isofitMuPos)
-        np.save(self.mcmcDir + 'isofitGammaPos.npy', self.isofitGammaPos)
+    # def saveConfig(self):
+    #     np.save(self.resultsDir + 'wavelength.npy', self.wavelengths)
+    #     np.save(self.resultsDir + 'radiance.npy', self.radiance)
+    #     np.save(self.resultsDir + 'truth.npy', self.truth)
+    #     np.save(self.resultsDir + 'bands.npy', self.bands)
+    #     np.save(self.resultsDir + 'mu_x.npy', self.mu_x)
+    #     np.save(self.resultsDir + 'gamma_x.npy', self.gamma_x)
+    #     np.save(self.resultsDir + 'isofitMuPos.npy', self.isofitMuPos)
+    #     np.save(self.resultsDir + 'isofitGammaPos.npy', self.isofitGammaPos)
+    #     np.save(self.resultsDir + 'posPredictive.npy', self.fm.calc_rdn(self.isofitMuPos, self.geom))
 
     def getPrior(self, fullconfig):
         # get index of prior used in inversion
@@ -113,4 +121,37 @@ class Setup:
         rfl_est, rdn_est, path_est, S_hat, K, G = iv.forward_uncertainty(state_est, radiance, self.geom)
 
         return state_est, S_hat
+    
+    def lookupLUT(self, point):
+        ret = {}
+        for key, lut in self.luts.items():
+            ret[key] = np.array(lut(point)).ravel()
+        return ret
+
+    def unpackLUTparam(self, atm):
+        lutparam = self.lookupLUT(atm)
+        rhoatm = lutparam['rhoatm']
+        sphalb = lutparam['sphalb']
+        transm = lutparam['transm']
+        coszen = np.load('coszen.npy')   
+        solar_irr = np.load('solar_irr.npy')   
+        return rhoatm, sphalb, transm, coszen, solar_irr
+
+    def linOper(self, sphalb, transm, coszen, solar_irr): # Conditioned on the atmospheric parameters!
+        # rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(atm)
+        # G = np.zeros([self.ny, self.nx])
+        xMAP = self.isofitMuPos[:self.ny]
+        # xMAP = self.mu_x[:self.ny]
+        # G[:self.ny, :self.ny]
+        G = coszen / np.pi * np.diag(solar_irr * transm / (1 - sphalb * xMAP))
+        return G
+    
+    def applyLinOper(self, ref, atm): # Conditioned on the atmospheric parameters!
+        # atm = x[-2:]
+        rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(atm)
+        G = self.linOper(sphalb, transm, coszen, solar_irr)
+        # x = np.concatenate((ref, atm))
+        x = ref
+        y_lut = G @ x + coszen / np.pi * solar_irr * rhoatm 
+        return y_lut
     

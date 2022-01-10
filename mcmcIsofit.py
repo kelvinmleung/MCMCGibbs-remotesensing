@@ -33,6 +33,8 @@ class MCMCIsofit:
         self.noisecov = setup.noisecov
         self.fm = setup.fm
         self.geom = setup.geom
+
+        self.luts = setup.luts
         
         # MCMC parameters to initialize
         self.Nsamp = Nsamp
@@ -44,7 +46,7 @@ class MCMCIsofit:
         self.nx = self.gamma_x.shape[0] # parameter dimension
         self.ny = self.noisecov.shape[0] # data dimension
 
-    def initMCMC(self,  rank=427, constrain=False):
+    def initMCMC(self, rank=2, constrain=False):
         
         # create folder
         if not os.path.exists(self.resultsDir):
@@ -52,8 +54,8 @@ class MCMCIsofit:
 
         # define upper and lower bounds 
         if constrain == True:
-            lowbound = np.concatenate((np.zeros(self.nx-2), [0, 1.3]))
-            upbound = np.concatenate((np.ones(self.nx-2), [0.5, 1.6]))
+            lowbound = np.concatenate((np.zeros(self.nx-2), [0, 1]))
+            upbound = np.concatenate((np.ones(self.nx-2), [0.5, 2]))
         else:
             lowbound = np.ones(self.nx) * np.NINF
             upbound = np.ones(self.nx) * np.inf
@@ -63,7 +65,7 @@ class MCMCIsofit:
             "Nsamp": self.Nsamp,
             "burn": self.burn,
             "sd": 2.38 ** 2 / rank,
-            "propcov": self.gammapos_isofit * (2.38 ** 2) / rank,# self.linGammaPos * (2.38 ** 2) / rank,
+            "propcov": np.array([[1,0],[0,1]]) * 0.001,#self.gamma_x * (2.38 ** 2) / rank,# self.gammapos_isofit * (2.38 ** 2) / rank,
             "lowbound": lowbound,
             "upbound": upbound,
             "rank": rank,
@@ -74,7 +76,11 @@ class MCMCIsofit:
             "fm": self.fm,
             "geom": self.geom,
             "resultsDir": self.resultsDir,
-            "thinning": self.thinning
+            "thinning": self.thinning,
+            "luts": self.luts,
+            "truth": self.truth,
+            "bands": self.bands,
+            "bandsX": self.bandsX
             }
         self.mcmc = MCMCGibbs(self.mcmcConfig)
         self.saveMCMCConfig()
@@ -91,6 +97,7 @@ class MCMCIsofit:
         np.save(self.resultsDir + 'gamma_x.npy', self.gamma_x)
         np.save(self.resultsDir + 'isofitMuPos.npy', self.mupos_isofit)
         np.save(self.resultsDir + 'isofitGammaPos.npy', self.gammapos_isofit)
+        np.save(self.resultsDir + 'posPredictive.npy', self.fm.calc_rdn(self.mupos_isofit, self.geom))
         np.save(self.resultsDir + 'Nsamp.npy', self.Nsamp)
         np.save(self.resultsDir + 'burn.npy', self.burn)
         np.save(self.resultsDir + 'thinning.npy', self.thinning)
