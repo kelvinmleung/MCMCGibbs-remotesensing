@@ -17,8 +17,8 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 resultsDir = '177_SNR50_DetRefl'
 setupDir = 'ang20140612'#'ang20170228'#
 
-Nsamp = 6000000
-burn = 1000000
+Nsamp = 6000
+burn = 1000
 thinning = 20
 ##### CONFIG #####
 
