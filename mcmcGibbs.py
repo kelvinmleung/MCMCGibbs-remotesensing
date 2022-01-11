@@ -47,12 +47,14 @@ class MCMCGibbs:
         self.bandsX = config["bandsX"]
 
     def lookupLUT(self, point):
+        ''' Returns the lookup table results for a atm point given self.luts (lookup table copied from isofit files) '''
         ret = {}
         for key, lut in self.luts.items():
             ret[key] = np.array(lut(point)).ravel()
         return ret
 
     def unpackLUTparam(self, atm):
+        ''' Obtain relevant LUT parameters '''
         lutparam = self.lookupLUT(atm)
         rhoatm = lutparam['rhoatm']
         sphalb = lutparam['sphalb']
@@ -62,10 +64,7 @@ class MCMCGibbs:
         return rhoatm, sphalb, transm, coszen, solar_irr
 
     def linOper(self, sphalb, transm, coszen, solar_irr): # Conditioned on the atmospheric parameters!
-        # rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(atm)
-        # G = np.zeros([self.ny, self.nx])
         xMAP = self.startX[:self.ny]
-        # G[:self.ny, :self.ny]
         G = coszen / np.pi * np.diag(solar_irr * transm / (1 - sphalb * xMAP))
         return G
 
@@ -319,6 +318,7 @@ class MCMCGibbs:
             # for i in range(30):
             #     plt.plot(self.proposal(mu_refl, chol_gamma_refl)[self.bands], 'r', linewidth=1, alpha=0.25)
             # plt.plot(mu_refl[self.bands], 'k')
+            # plt.title('Proposals resulting from SNR=100')
 
             # plt.figure()
             # X_plot = np.arange(1,self.ny+1,1)
