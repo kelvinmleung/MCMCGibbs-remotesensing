@@ -5,4 +5,4 @@
 #SBATCH --error=runjob2.err
 #SBATCH --exclusive
  
-python runFile_job1.py
+python runFile_job2.py
