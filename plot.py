@@ -71,7 +71,8 @@ class PlotFromFile:
         self.MCMCcov = np.cov(self.x_plot)
 
         self.logpos = np.load(self.resultsDir + 'logpos.npy')
-        # self.acceptance = np.load(self.resultsDir + 'acceptance.npy')
+        self.acceptAtm = np.load(self.resultsDir + 'acceptAtm.npy')
+        self.acceptRef = np.load(self.resultsDir + 'acceptRef.npy')
 
         # self.x_vals_ac = x_vals[:,:self.NsampAC]
 
@@ -389,7 +390,7 @@ class PlotFromFile:
         return ax, cfset
 
     def kdcontouratm(self, indX, indY):
-        x_vals = np.load(self.resultsDir + 'MCMC_x.npy')
+        x_vals = np.load(self.resultsDir + 'mcmcchain.npy')
         x_vals_plot = x_vals[:,self.burnthin:]
 
         x = x_vals_plot[indX,:]
@@ -575,20 +576,25 @@ class PlotFromFile:
         plt.savefig(self.resultsDir + 'logpos.png', dpi=300)
 
         # acceptance rate
-        # acceptRate = np.mean(self.acceptance[self.burnthin:])
-        # binWidth = 1000
-        # numBin = int(self.Nsamp / binWidth)
-        # xPlotAccept = np.arange(binWidth, self.Nsamp+1, binWidth) * self.thinning
-        # acceptPlot = np.zeros(numBin)
-        # for i in range(numBin):
-        #     acceptPlot[i] = np.mean(self.acceptance[binWidth*i : binWidth*(i+1)])
-        # plt.figure()
-        # plt.plot(xPlotAccept, acceptPlot)
-        # plt.xlabel('Number of Samples')
-        # plt.ylabel('Acceptance Rate')
-        # plt.title('Acceptance Rate = ' + str(round(acceptRate,2)))
-        # plt.ylim([0, 1])
-        # plt.savefig(self.resultsDir + 'acceptance.png', dpi=300)
+        acceptRateAtm= np.mean(self.acceptAtm[self.burnthin:])
+        acceptRateRef= np.mean(self.acceptRef[self.burnthin:])
+        binWidth = 1000
+        numBin = int(self.Nsamp / binWidth)
+        xPlotAccept = np.arange(binWidth, self.Nsamp+1, binWidth) * self.thinning
+        acceptPlotAtm = np.zeros(numBin)
+        acceptPlotRef = np.zeros(numBin)
+        for i in range(numBin):
+            acceptPlotAtm[i] = np.mean(self.acceptAtm[binWidth*i : binWidth*(i+1)])
+            acceptPlotRef[i] = np.mean(self.acceptRef[binWidth*i : binWidth*(i+1)])
+        plt.figure()
+        plt.plot(xPlotAccept, acceptPlotAtm, label='Atm Param')
+        plt.plot(xPlotAccept, acceptPlotRef, label='Reflectance')
+        plt.xlabel('Number of Samples')
+        plt.ylabel('Acceptance Rate')
+        plt.title('Acceptance Rate')# = ' + str(round(acceptRate,2)))
+        plt.legend()
+        plt.ylim([0, 1])
+        plt.savefig(self.resultsDir + 'acceptance.png', dpi=300)
 
 
     # def plot2ac(self, indset=[120,250,410]):

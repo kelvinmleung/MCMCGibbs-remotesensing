@@ -14,12 +14,12 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 
 
 ##### CONFIG #####
-resultsDir = '177_SNR50_DetRefl_short'
+resultsDir = '177_SNR50_RandWalkEps0_14_1M'
 setupDir = 'ang20140612'#'ang20170228'#
 
-Nsamp = 2000000
-burn = 200000
-thinning = 20
+Nsamp = 1000000
+burn = 100000
+thinning = 10
 ##### CONFIG #####
 
 f = FileProcessing(setupDir='setup/' + setupDir)

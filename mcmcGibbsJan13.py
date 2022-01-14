@@ -3,6 +3,9 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.stats import truncnorm
 
+## PROGRESSS AS OF JAN 13 ##
+# next version will delete the unnecessary commented-out code
+
 class MCMCGibbs:
     '''
     Contains functions to perform MCMC sampling with approximate Gibbs
@@ -75,13 +78,6 @@ class MCMCGibbs:
         z = mean + std * truncnorm.rvs(a,b)
         return z
 
-    # def proposalRef(self, mean, cov):
-    #     ''' Sample proposal from a normal distribution '''
-    #     zx = np.random.normal(0, 1, size=mean.size)
-    #     z = mean + np.linalg.cholesky(cov) @ zx
-        
-    #     return z
-
     def proposal(self, mean, covCholesky):
         ''' Sample proposal from a normal distribution '''
         
@@ -119,10 +115,6 @@ class MCMCGibbs:
         # plt.show()
 
         return logprior + loglikelihood
-
-    def lognormal(self, x, mu, cov):
-        ''' Calculate the log normal density '''
-        return -1/2 * (x - mu).T @ np.linalg.inv(cov) @ (x - mu)
         
     def alpha(self, x, z):
         ''' Calculate acceptance ratio '''
@@ -130,17 +122,9 @@ class MCMCGibbs:
         logposX = self.logpos(x)
         ratio = logposZ - logposX
 
-        # return both acceptance ratio and logpos
-        return np.minimum(1, np.exp(ratio)), logposZ, logposX
-
-    def alphaAsym(self, x, z, mu, cov):
-        ''' Calculate acceptance ratio for asymmetric proposal '''
-        logposZ = self.logpos(z)
-        logposX = self.logpos(x)
-        logqZ = self.lognormal(z[:-2], mu, cov)
-        logqX = self.lognormal(x[:-2], mu, cov)
-        ratio = logposZ - logposX - logqZ + logqX
-        print('\t %10.3f | %10.3E %10.3E %10.3E %10.3E' % (ratio, logposZ, logposX, logqZ, logqX))
+        # if self.checkConstraint(z) == False:
+        #     # print('Constraint Violated.')
+        #     return 0, logposZ, logposX
 
         # return both acceptance ratio and logpos
         return np.minimum(1, np.exp(ratio)), logposZ, logposX
@@ -280,7 +264,7 @@ class MCMCGibbs:
         #################################################
         x[:-2] = mu_refl
 
-        # setup = self.loadSetup2()
+        setup = self.loadSetup2()
 
         
         for i in range(self.Nsamp):
@@ -297,7 +281,7 @@ class MCMCGibbs:
                 
                 # self.plotRadiance(zAtm, x)
 
-                x[-2:] = zAtm[-2:] 
+                x[-2:] = zAtm[-2:] # change only the atm parameters in x ##################
                 # print('xATM:', xAtm)
 
                 logposX = logposZ
@@ -309,47 +293,60 @@ class MCMCGibbs:
                 rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
                 G = self.linOper(sphalb, transm, coszen, solar_irr)
                 yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
+                
+                # gamma_y = G @ gamma_x @ G.T + self.noisecov
+                # inv_gamma_y = np.linalg.inv(gamma_y)
+                # gamma_refl = (np.identity(self.ny) - gamma_x @ G.T @ inv_gamma_y @ G) @ gamma_x
+                
                 gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
                 mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
                 chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
 
-            factor = 0.14
-            # factor=1
-            gamma_prop = gamma_refl * (factor ** 2)
-            chol_gamma_prop = chol_gamma_refl * factor
+                # self.plotTempRetrieval(setup, mu_refl)
+                # plt.show()
+
+                # plt.plot(self.bands, np.sqrt(np.diag(gamma_refl)[self.bands]), label='Linear')
+                # plt.plot(self.bands, np.sqrt(np.diag(gamma_x)[self.bands]), label='Prior')
+                # # plt.plot(np.sqrt(np.diag(gamma_x)), label='Prior')
+                # plt.legend()
+                # plt.show()
+
+
             zRef = np.copy(x)
             # zRef[:-2] = mu_refl 
-            # zRef[:-2] = self.proposal(mu_refl, chol_gamma_prop)
-            zRef[:-2] = self.proposal(x[:-2], chol_gamma_prop)
+            # zRef[:-2] = self.proposal(mu_refl, chol_gamma_refl*0.05)
+            zRef[:-2] = self.proposal(x[:-2], chol_gamma_refl*0.2)
 
-            # plt.plot(mu_refl, label='mean', alpha=0.8)
-            # plt.plot(x[:-2], label='current', alpha=0.6)
-            # plt.plot(zRef[:-2], label='proposal', alpha=0.4)
-            # plt.ylim([0.2,0.25])
+            # plt.figure()
+            # for i in range(30):
+            #     plt.plot(self.proposal(mu_refl, chol_gamma_refl)[self.bands], 'r', linewidth=1, alpha=0.25)
+            # plt.plot(mu_refl[self.bands], 'k')
+            # plt.title('Proposals resulting from SNR=100')
+
+            # plt.figure()
+            # X_plot = np.arange(1,self.ny+1,1)
+            # Y_plot = np.arange(1,self.ny+1,1)
+            # X_plot, Y_plot = np.meshgrid(X_plot, Y_plot)
+            # from matplotlib import ticker
+            # plt.contourf(X_plot,Y_plot,gamma_refl, locator=ticker.LogLocator())
+            # plt.axis('equal')
+            # plt.colorbar()
+
+            # prContrib = gamma_refl @ self.invGammaX_ref @ mu_x
+            # obsContrib = gamma_refl @ G.T @ self.invNoiseCov @ yobs_adjust 
+            # plt.figure()
+            # plt.plot(self.bands, zRef[self.bands], '.',label='z')
+            # plt.plot(self.bands, x[self.bands],'.',label='x')
+            # plt.plot(self.bands, prContrib[self.bands],label='Prior Contribution')
+            # plt.plot(self.bands, obsContrib[self.bands],label='Obs Contribution')
+            # plt.ylim([0,0.25])
             # plt.legend()
             # plt.show()
 
-            ###### if we want to calculate acceptance in three tries ######
-            # refProp = self.proposal(mu_refl, chol_gamma_refl*0.2)
-            # cutOff = [5,195,225,295,320,430]
-            # for j in range(3):
-            #     a = cutOff[j*2]
-            #     b = cutOff[j*2+1]
-            #     zRef = np.copy(x)
-            #     zRef[a:b] = refProp[a:b]
+            # zRef[:-2] = self.proposal(x[:-2], chol_gamma_refl*0.01)
 
-            #     alphaRef, logposZ, logposX = self.alpha(x, zRef)
-            #     # print('Refl:', alphaRef, logposX, logposZ)
-
-            #     if np.random.random() < alphaRef:
-            #         x[a:b] = zRef[a:b] # change the reflectances of x
-            #         acceptRef[i] += 1/3
-            ################################################################
-
-            
             # print('xATM:', xAtm)
             alphaRef, logposZ, logposX = self.alpha(x, zRef)
-            # alphaRef, logposZ, logposX = self.alphaAsym(x, zRef, mu_refl, gamma_prop)
             # print('Refl:', alphaRef, logposX, logposZ)
             
             if np.random.random() < alphaRef:
@@ -357,8 +354,8 @@ class MCMCGibbs:
                 logposX = logposZ
                 acceptRef[i] += 1
             
-            # x_vals[:,i] = x
-            # logpos[i] = logposX
+            x_vals[:,i] = x
+            logpos[i] = logposX
             
             # print progress
             if (i+1) % 500 == 0: 
@@ -366,6 +363,9 @@ class MCMCGibbs:
                 print('   Atm Accept Rate: ', np.mean(acceptAtm[i-499:i]))
                 print('   Ref Accept Rate: ', np.mean(acceptRef[i-499:i]))
                 print('xATM:', xAtm)
+                # print(logposX, logposZ)
+                # print('         Alpha Atm', alphaAtm)
+                # print('         Alpha Reflectance', alphaRef)
                 propCholAtm = np.linalg.cholesky(self.propcovAtm) # update chol of propcov
                 sys.stdout.flush()
 

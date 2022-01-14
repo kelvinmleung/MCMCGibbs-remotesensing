@@ -17,7 +17,7 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 resultsDir = 'Test1'
 setupDir = 'ang20140612'#'ang20170228'#
 
-Nsamp = 6000
+Nsamp = 3000
 burn = 1000
 thinning = 1
 ##### CONFIG #####
