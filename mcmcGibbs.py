@@ -357,8 +357,8 @@ class MCMCGibbs:
                 logposX = logposZ
                 acceptRef[i] += 1
             
-            # x_vals[:,i] = x
-            # logpos[i] = logposX
+            x_vals[:,i] = x
+            logpos[i] = logposX
             
             # print progress
             if (i+1) % 500 == 0: 
