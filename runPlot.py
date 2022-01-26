@@ -6,24 +6,26 @@ import matplotlib.pyplot as plt
 from plot import PlotFromFile
 
 
-# resultsDir = '../resultsGibbs/dark_SNR50_RandWalkEps0_14_1M/'
-resultsDir = '../resultsGibbs/Test1/'
+resultsDir = '../resultsGibbs/dark_SNR50_RandWalkEps0_14_1M/'
+# resultsDir = '../resultsGibbs/Test1/'
 setupDir = 'setup/ang20140612/' #'setup/ang20170228/' #
 p = PlotFromFile(setupDir, resultsDir)
 # p.plotRadiance()
-p.plotPosterior()
 # p.plotError()
-p.plot2Dmarginal()
 # p.plot2Dcontour()
-# p.kdcontouratm(indX=432, indY=433)
-p.diagnostics(indSet=[20,50,150,160,250,260,400,410])
 # p.quantDiagnostic()
 
-fig, ax = plt.subplots()
-p.twoDimVisual(432,433,ax)
-# p.twoDimVisual(425,426,ax)
-plt.title('2D Marginal - Atmospheric Parameters')
-plt.savefig(resultsDir + '2DmarginalATM.png', dpi=300)
+# p.plotPosterior()
+# p.plot2Dmarginal()
+# p.kdcontouratm(indX=432, indY=433)
+# p.diagnostics(indSet=[20,50,150,160,250,260,400,410])
+p.comparePosCov()
+p.comparePosCorr()
+
+# fig, ax = plt.subplots()
+# p.twoDimVisual(432,433,ax)
+# plt.title('2D Marginal - Atmospheric Parameters')
+# plt.savefig(resultsDir + '2DmarginalATM.png', dpi=300)
 
 
 # plot radiance

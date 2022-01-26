@@ -16,6 +16,7 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 ##### CONFIG #####
 resultsDir = 'Test1'
 setupDir = 'ang20140612'#'ang20170228'#
+method = 'RandWalk'
 
 Nsamp = 10000
 burn = 1000
@@ -28,8 +29,8 @@ f = FileProcessing(setupDir='setup/' + setupDir)
 # f.loadRadiance('data/beckmanlawn/ang20171108t184227_data_v2p11_BeckmanLawn.mat')
 # f.loadConfig('config/config_inversion.json')
 f.loadWavelength('data/wavelengths.txt')
-f.loadReflectance('data/dark/insitu.txt')
-f.loadRadiance('data/dark/ang20140612t215931_data_dump.mat')
+f.loadReflectance('data/177/insitu.txt')
+f.loadRadiance('data/177/ang20140612t215931_data_dump.mat')
 f.loadConfig('config/config_inversion.json')
 wv, ref, radiance, config = f.getFiles()
 
@@ -39,14 +40,12 @@ setup = Setup(wv, ref, radiance, config, resultsDir=resultsDir, setupDir=setupDi
 
 ## MCMC ##
 x0 = setup.isofitMuPos
-# x0 = setup.mu_x
-# x0 = setup.truth
 
 m = MCMCIsofit(setup, Nsamp, burn, x0, 'AM', thinning=thinning)
 m.initMCMC(constrain=True, rank=2) 
 
 start_time = time.time()
-m.runAM()
+m.runAM(method)
 np.savetxt(setup.resultsDir + 'runtime.txt', np.array([time.time() - start_time]))
 
 
@@ -64,13 +63,17 @@ np.savetxt(setup.resultsDir + 'runtime.txt', np.array([time.time() - start_time]
 #     y_fwd = setup.fm.calc_rdn(sampFull, setup.geom)
 #     err += abs(y_lin - y_fwd) / y_fwd
 # err = err/N
-# plt.plot(setup.wavelengths, err, label='Error')
-# plt.title('Error in Linearized Forward Model')
+# # plt.plot(setup.wavelengths, err, label='Error')
+# # plt.title('Error in Linearized Forward Model')
 
-# plt.plot(setup.wavelengths, y_fwd, label='Forward Model')
-# plt.plot(setup.wavelengths, y_lin, label='From LUT')
-# plt.legend()
+# # plt.plot(setup.wavelengths, y_fwd, label='Forward Model')
+# # plt.plot(setup.wavelengths, y_lin, label='From LUT')
+# # plt.legend()
 # # plt.show()
+# plt.figure()
+# for i in range(5):
+#     plt.plot(samp[i,:])
+# plt.show()
 
 # radiance=0
 # setup = Setup(wv, ref, radiance, config, resultsDir=resultsDir, setupDir=setupDir)

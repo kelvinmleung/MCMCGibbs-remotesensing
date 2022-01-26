@@ -597,6 +597,70 @@ class PlotFromFile:
         plt.savefig(self.resultsDir + 'acceptance.png', dpi=300)
 
 
+    def comparePosCov(self):
+        covPrior = self.gamma_x[:,self.bands][self.bands,:] 
+        covIsofit = self.isofitGammaPos[:,self.bands][self.bands,:] 
+        covMCMC = self.MCMCcov[:,self.bands][self.bands,:] 
+        print('Compare Covariance Matrices\n')
+        self.compareMatrix(covPrior, covIsofit, covMCMC)
+
+    def comparePosCorr(self):
+
+        covPrior = self.gamma_x[:,self.bands][self.bands,:] 
+        varPrior = np.diag(1 / np.sqrt(np.diag(covPrior)))
+        corrPrior = varPrior @ covPrior @ varPrior
+
+        covIsofit = self.isofitGammaPos[:,self.bands][self.bands,:] 
+        varIsofit = np.diag(1 / np.sqrt(np.diag(covIsofit)))
+        corrIsofit = varIsofit.T @ covIsofit @ varIsofit
+
+        covMCMC = self.MCMCcov[:,self.bands][self.bands,:] 
+        varMCMC = np.diag(1 / np.sqrt(np.diag(covMCMC)))
+        corrMCMC = varMCMC.T @ covMCMC @ varMCMC
+        print('Compare Correlation Matrices\n')
+        self.compareMatrix(corrPrior, corrIsofit, corrMCMC)
+    
+    def compareMatrix(self, covPrior, covIsofit, covMCMC):        
+        
+        # trace
+        traceIsofit = np.trace(covIsofit)
+        traceMCMC = np.trace(covMCMC)
+        traceDiff = abs(traceIsofit - traceMCMC) / abs(traceMCMC)
+
+        # log determinant
+        sgn1, detIsofit = np.linalg.slogdet(covIsofit)
+        sgn2, detMCMC = np.linalg.slogdet(covMCMC)
+        detDiff = abs(detIsofit - detMCMC) / abs(detMCMC)
+
+        # Frobenius norm
+        normIsofit = np.linalg.norm(covIsofit)
+        normMCMC = np.linalg.norm(covMCMC)
+        normDiff = abs(normIsofit - normMCMC) / abs(normMCMC)
+
+        # forstner distance
+        forstner = 0
+        eigs = s.linalg.eigh(covIsofit, covMCMC, eigvals_only=True)
+        # print(eigs)
+        for j in range(eigs.size):
+            forstner = forstner + (np.log(eigs[j])) ** 2
+        forstner = np.sqrt(forstner)
+
+        forstPr = 0
+        eigs = s.linalg.eigh(covPrior, covMCMC, eigvals_only=True)
+        # print(eigs)
+        for j in range(eigs.size):
+            forstPr = forstPr + (np.log(eigs[j])) ** 2
+        forstPr = np.sqrt(forstPr)
+
+        print('\t\t Isofit \t MCMC \t Percent Diff')
+        # print('Determinant:   %10.3E  %10.3E  %10.3f' % (detIsofit, detMCMC, detDiff))
+        print('Trace:         %10.3E  %10.3E  %10.3f' % (traceIsofit, traceMCMC, traceDiff))
+        print('Frob Norm:     %10.3E  %10.3E  %10.3f' % (normIsofit, normMCMC, normDiff))
+        print('Log Det:       %10.3E  %10.3E        ' % (detIsofit, detMCMC))
+        print('Forstner:              %10.3f  %10.3f' % (forstner, forstner/forstPr))
+
+
+
     # def plot2ac(self, indset=[120,250,410]):
 
     #     fig, axs = plt.subplots(1, len(indset))

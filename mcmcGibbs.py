@@ -45,6 +45,7 @@ class MCMCGibbs:
         self.truth = config["truth"]
         self.bands = config["bands"]
         self.bandsX = config["bandsX"]
+        self.gammapos_isofit = config["gammapos_isofit"]
 
     def lookupLUT(self, point):
         ''' Returns the lookup table results for a atm point given self.luts (lookup table copied from isofit files) '''
@@ -153,101 +154,9 @@ class MCMCGibbs:
             return False
         return True
 
-    # def adaptmAnnotate(self, alg):
-    #     ''' Run Adaptive-Metropolis MCMC algorithm - ANNOTATED'''
-
-    #     # initialize vectors
-    #     x_vals = np.zeros([self.nx, self.Nsamp]) # store all samples
-    #     logpos = np.zeros(self.Nsamp) # store the log posterior values
-    #     acceptAtm = np.zeros(self.Nsamp, dtype=int)
-    #     acceptRef = np.zeros(self.Nsamp, dtype=int)
-        
-    #     # get prior reflectance - mean and covariance (no atm) (432x432)
-    #     mu_x = self.mu_x[:-2]
-    #     gamma_x = self.gamma_x[:-2,:-2]
-
-    #     # initialize proposal covariance for atm only (2x2)
-    #     self.propcovAtm = self.propcov[-2:,-2:]
-    #     propStdAtm = np.sqrt(np.diag(self.propcovAtm))
-    #     eps = 1e-10 # epsilon for proposal covariance calculation
-
-    #     # initialize the chain at the MAP point
-    #     x = self.x0       
-
-    #     # obtain the linearized model G given the MAP atm parameters
-    #     # yobs_adjust is the adjusted version of y = Gx + const, where yobs_adjust = y - const = Gx
-    #     xAtm = x[-2:]  
-    #     rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
-    #     G = self.linOper(sphalb, transm, coszen, solar_irr)
-    #     yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
-
-    #     for i in range(self.Nsamp):
-            
-    #         # create copy of x and propose new atm param
-    #         zAtm = np.copy(x)
-    #         zAtm[-2:] = self.proposalAtm(x[-2:], propStdAtm)
-
-    #         # check acceptance rate for x with new atm param
-    #         alphaAtm, logposZ, logposX = self.alpha(x, zAtm)
-    #         if np.random.random() < alphaAtm:
-
-    #             # update atm param of x
-    #             x[-2:] = zAtm[-2:]
-    #             logposX = logposZ
-    #             acceptAtm[i] += 1
-
-    #             # use this atm param to generate the new linearized forward model G, yobs_adjust
-    #             xAtm = x[-2:]
-    #             rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
-    #             G = self.linOper(sphalb, transm, coszen, solar_irr)
-    #             yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
-                
-    #             # apply posterior mean and covariance equations
-    #             # cholesky factorize the pos covariance for proposal
-    #             gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
-    #             mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
-    #             chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
-
-    #         # set reflectance to posterior mean OR propose new reflectance using mu_refl, gamma_refl
-    #         zRef = np.copy(x)
-    #         zRef[:-2] = mu_refl 
-    #         # zRef[:-2] = self.proposal(mu_refl, chol_gamma_refl*0.2)
-
-    #         # check acceptance rate
-    #         alphaRef, logposZ, logposX = self.alpha(x, zRef)
-    #         if np.random.random() < alphaRef:
-    #             x[:-2] = zRef[:-2] 
-    #             logposX = logposZ
-    #             acceptRef[i] += 1
-            
-    #         x_vals[:,i] = x
-    #         logpos[i] = logposX
-            
-    #         # print progress
-    #         if (i+1) % 500 == 0: 
-    #             print('Sample: ', i+1)
-    #             print('   Atm Accept Rate: ', np.mean(acceptAtm[i-499:i]))
-    #             print('   Ref Accept Rate: ', np.mean(acceptRef[i-499:i]))
-    #             sys.stdout.flush()
-
-    #         # # change proposal covariance
-    #         if i == 999:
-    #             self.propcovAtm = self.sd * (np.cov(x_vals[-2:,:1000]) + eps * np.identity(2))
-    #             meanXprev = np.mean(x_vals[-2:,:1000],1)
-    #         elif i >= 1000:
-    #             meanX = i / (i + 1) * meanXprev + 1 / (i + 1) * x_vals[-2:,i]
-    #             self.propcovAtm = (i-1) / i * self.propcovAtm + self.sd / i * (i * np.outer(meanXprev, meanXprev) - (i+1) * np.outer(meanX, meanX) + np.outer(x_vals[-2:,i], x_vals[-2:,i]) + eps * np.identity(2))
-    #             meanXprev = meanX
-                
-    #     np.save(self.resultsDir + 'mcmcchain.npy', x_vals[:,::self.thinning])
-    #     np.save(self.resultsDir + 'logpos.npy', logpos[::self.thinning])
-    
-
-    def adaptm(self, alg):
-        ''' Run Adaptive-Metropolis MCMC algorithm '''
+    def adaptmRandWalk(self):
+        ''' Run Adaptive-Metropolis MCMC algorithm - Random Walk (instead of independence sampling) '''
         x_vals = np.zeros([self.nx, self.Nsamp]) # store all samples
-        # x_vals = np.zeros([self.rank, self.Nsamp]) # store all samples
-        # x_vals_comp = np.zeros([self.nComp, self.Nsamp])
 
         logpos = np.zeros(self.Nsamp) # store the log posterior values
         acceptAtm = np.zeros(self.Nsamp, dtype=int)
@@ -263,11 +172,9 @@ class MCMCGibbs:
 
         self.propcovAtm = self.propcov[-2:,-2:]
         propStdAtm = np.sqrt(np.diag(self.propcovAtm))
-        # propCholAtm = np.linalg.cholesky(self.propcovAtm)
         
         eps = 1e-10
 
-        ### Try initializing like this ##############
         rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
         G = self.linOper(sphalb, transm, coszen, solar_irr)
         yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
@@ -277,11 +184,106 @@ class MCMCGibbs:
         gamma_refl = (np.identity(self.ny) - gamma_x @ G.T @ inv_gamma_y @ G) @ gamma_x
         mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
         chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
-        #################################################
+        x[:-2] = mu_refl
+
+
+        chol_gamma_prop = np.linalg.cholesky(self.gammapos_isofit[:-2,:-2]) * 0.11
+
+        for i in range(self.Nsamp):
+
+            zAtm = np.copy(x)
+            zAtm[-2:] = self.proposalAtm(x[-2:], propStdAtm)
+            alphaAtm, logposZ, logposX = self.alpha(x, zAtm)
+            if np.random.random() < alphaAtm:
+                x[-2:] = zAtm[-2:] 
+                logposX = logposZ
+                acceptAtm[i] += 1
+
+                # update linear operator conditioned on the atm
+                xAtm = x[-2:]
+
+                # rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
+                # G = self.linOper(sphalb, transm, coszen, solar_irr)
+                # yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
+                # gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
+                # mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+                # chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
+
+            # factor = 0.14
+            # chol_gamma_prop = chol_gamma_refl * factor
+            zRef = np.copy(x)
+            zRef[:-2] = self.proposal(x[:-2], chol_gamma_prop)
+
+            alphaRef, logposZ, logposX = self.alpha(x, zRef)
+            
+            if np.random.random() < alphaRef:
+                x[:-2] = zRef[:-2] # change the reflectances of x
+                logposX = logposZ
+                acceptRef[i] += 1
+            
+            x_vals[:,i] = x
+            logpos[i] = logposX
+            
+            # print progress
+            if (i+1) % 500 == 0: 
+                print('Sample: ', i+1)
+                print('   Atm Accept Rate: ', np.mean(acceptAtm[i-499:i]))
+                print('   Ref Accept Rate: ', np.mean(acceptRef[i-499:i]))
+                print('xATM:', xAtm)
+                sys.stdout.flush()
+
+            # # change proposal covariance
+            if i == 999:
+                self.propcovAtm = self.sd * (np.cov(x_vals[-2:,:1000]) + eps * np.identity(2))
+                meanXprev = np.mean(x_vals[-2:,:1000],1)
+            elif i >= 1000:
+                meanX = i / (i + 1) * meanXprev + 1 / (i + 1) * x_vals[-2:,i]
+                self.propcovAtm = (i-1) / i * self.propcovAtm + self.sd / i * (i * np.outer(meanXprev, meanXprev) - (i+1) * np.outer(meanX, meanX) + np.outer(x_vals[-2:,i], x_vals[-2:,i]) + eps * np.identity(2))
+                meanXprev = meanX
+                
+        np.save(self.resultsDir + 'mcmcchain.npy', x_vals[:,::self.thinning])
+        np.save(self.resultsDir + 'logpos.npy', logpos[::self.thinning])
+        np.save(self.resultsDir + 'acceptAtm.npy', acceptAtm[::self.thinning])
+        np.save(self.resultsDir + 'acceptRef.npy', acceptRef[::self.thinning])
+    
+    # def smooth(self, y, box_pts):
+    #     box = np.ones(box_pts)/box_pts
+    #     y_smooth = np.convolve(y, box, mode='same')
+    #     return y_smooth
+
+    def adaptm(self):
+        ''' Run Adaptive-Metropolis MCMC algorithm '''
+        x_vals = np.zeros([self.nx, self.Nsamp]) # store all samples
+        logpos = np.zeros(self.Nsamp) # store the log posterior values
+        acceptAtm = np.zeros(self.Nsamp, dtype=int)
+        acceptRef = np.zeros(self.Nsamp, dtype=int)
+
+        mu_x = self.mu_x[:-2]
+        gamma_x = self.gamma_x[:-2,:-2]
+
+        x = self.x0               
+        xAtm = x[-2:]       
+        mu_refl = x[:-2]
+        chol_gamma_refl = np.linalg.cholesky(gamma_x) 
+
+        self.propcovAtm = self.propcov[-2:,-2:]
+        propStdAtm = np.sqrt(np.diag(self.propcovAtm))
+        
+        eps = 1e-10
+
+        rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
+        G = self.linOper(sphalb, transm, coszen, solar_irr)
+        yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
+        
+        gamma_y = G @ gamma_x @ G.T + self.noisecov
+        inv_gamma_y = np.linalg.inv(gamma_y)
+        gamma_refl = (np.identity(self.ny) - gamma_x @ G.T @ inv_gamma_y @ G) @ gamma_x
+        mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+        chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
+        
         x[:-2] = mu_refl
 
         # setup = self.loadSetup2()
-
         
         for i in range(self.Nsamp):
 
@@ -311,45 +313,30 @@ class MCMCGibbs:
                 yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
                 gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
                 mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
-                chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
+                # chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
 
-            factor = 0.14
-            # factor=1
+            # factor = 0.14
+            factor = 1
             gamma_prop = gamma_refl * (factor ** 2)
-            chol_gamma_prop = chol_gamma_refl * factor
+            chol_gamma_prop = np.linalg.cholesky(gamma_prop) 
             zRef = np.copy(x)
-            # zRef[:-2] = mu_refl 
-            # zRef[:-2] = self.proposal(mu_refl, chol_gamma_prop)
-            zRef[:-2] = self.proposal(x[:-2], chol_gamma_prop)
+            zRef[:-2] = self.proposal(mu_refl, chol_gamma_prop)
+            # zRef[:-2] = self.smooth(zRef[:-2], 10)
 
-            # plt.plot(mu_refl, label='mean', alpha=0.8)
-            # plt.plot(x[:-2], label='current', alpha=0.6)
-            # plt.plot(zRef[:-2], label='proposal', alpha=0.4)
-            # plt.ylim([0.2,0.25])
+            # plt.plot(mu_refl, label='mean', alpha=0.9)
+            # plt.plot(x[:-2], label='current', alpha=0.7)
+            # plt.plot(zRef[:-2], label='proposal', alpha=0.5)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 1', alpha=0.6)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 2', alpha=0.6)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 3', alpha=0.6)
+            # # plt.ylim([0.2,0.25])
+            # plt.ylim([0.1,0.3])
             # plt.legend()
             # plt.show()
 
-            ###### if we want to calculate acceptance in three tries ######
-            # refProp = self.proposal(mu_refl, chol_gamma_refl*0.2)
-            # cutOff = [5,195,225,295,320,430]
-            # for j in range(3):
-            #     a = cutOff[j*2]
-            #     b = cutOff[j*2+1]
-            #     zRef = np.copy(x)
-            #     zRef[a:b] = refProp[a:b]
-
-            #     alphaRef, logposZ, logposX = self.alpha(x, zRef)
-            #     # print('Refl:', alphaRef, logposX, logposZ)
-
-            #     if np.random.random() < alphaRef:
-            #         x[a:b] = zRef[a:b] # change the reflectances of x
-            #         acceptRef[i] += 1/3
-            ################################################################
-
-            
             # print('xATM:', xAtm)
-            alphaRef, logposZ, logposX = self.alpha(x, zRef)
-            # alphaRef, logposZ, logposX = self.alphaAsym(x, zRef, mu_refl, gamma_prop)
+            # alphaRef, logposZ, logposX = self.alpha(x, zRef)
+            alphaRef, logposZ, logposX = self.alphaAsym(x, zRef, mu_refl, gamma_prop)
             # print('Refl:', alphaRef, logposX, logposZ)
             
             if np.random.random() < alphaRef:
@@ -366,7 +353,6 @@ class MCMCGibbs:
                 print('   Atm Accept Rate: ', np.mean(acceptAtm[i-499:i]))
                 print('   Ref Accept Rate: ', np.mean(acceptRef[i-499:i]))
                 print('xATM:', xAtm)
-                propCholAtm = np.linalg.cholesky(self.propcovAtm) # update chol of propcov
                 sys.stdout.flush()
 
             # # change proposal covariance
@@ -378,7 +364,6 @@ class MCMCGibbs:
                 self.propcovAtm = (i-1) / i * self.propcovAtm + self.sd / i * (i * np.outer(meanXprev, meanXprev) - (i+1) * np.outer(meanX, meanX) + np.outer(x_vals[-2:,i], x_vals[-2:,i]) + eps * np.identity(2))
                 meanXprev = meanX
                 
-        
         np.save(self.resultsDir + 'mcmcchain.npy', x_vals[:,::self.thinning])
         np.save(self.resultsDir + 'logpos.npy', logpos[::self.thinning])
         np.save(self.resultsDir + 'acceptAtm.npy', acceptAtm[::self.thinning])
@@ -449,4 +434,23 @@ class MCMCGibbs:
         plt.ylim([0.05,0.3])
         plt.legend()
 
+
+    ###### if we want to calculate acceptance in three tries ######
+    # refProp = self.proposal(mu_refl, chol_gamma_refl*0.2)
+    # cutOff = [5,195,225,295,320,430]
+    # for j in range(3):
+    #     a = cutOff[j*2]
+    #     b = cutOff[j*2+1]
+    #     zRef = np.copy(x)
+    #     zRef[a:b] = refProp[a:b]
+
+    #     alphaRef, logposZ, logposX = self.alpha(x, zRef)
+    #     # print('Refl:', alphaRef, logposX, logposZ)
+
+    #     if np.random.random() < alphaRef:
+    #         x[a:b] = zRef[a:b] # change the reflectances of x
+    #         acceptRef[i] += 1/3
+    ################################################################
+
+            
         

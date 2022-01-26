@@ -80,13 +80,19 @@ class MCMCIsofit:
             "luts": self.luts,
             "truth": self.truth,
             "bands": self.bands,
-            "bandsX": self.bandsX
+            "bandsX": self.bandsX,
+            "gammapos_isofit": self.gammapos_isofit
             }
         self.mcmc = MCMCGibbs(self.mcmcConfig)
         self.saveMCMCConfig()
 
-    def runAM(self):
-        self.mcmc.adaptm(self.alg)   
+    def runAM(self, method='RandWalk'):
+        if method == 'RandWalk':
+            self.mcmc.adaptmRandWalk()
+        elif method == 'IndepSamp':
+            self.mcmc.adaptm()   
+        else:
+            print('Error.')
 
     def saveMCMCConfig(self):
         # np.save(self.resultsDir + 'wavelength.npy', self.wavelengths)

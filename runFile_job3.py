@@ -14,7 +14,7 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 
 
 ##### CONFIG #####
-resultsDir = '306_SNR50_RandWalkIsofitCovEps0_11_1M'
+resultsDir = 'mars_SNR50_RandWalkIsofitCovEps0_11_1M'
 setupDir = 'ang20140612'#'ang20170228'#
 method = 'RandWalk'
 
@@ -29,8 +29,8 @@ f = FileProcessing(setupDir='setup/' + setupDir)
 # f.loadRadiance('data/beckmanlawn/ang20171108t184227_data_v2p11_BeckmanLawn.mat')
 # f.loadConfig('config/config_inversion.json')
 f.loadWavelength('data/wavelengths.txt')
-f.loadReflectance('data/306/insitu.txt')
-f.loadRadiance('data/306/ang20140612t215931_data_dump.mat')
+f.loadReflectance('data/mars/insitu.txt')
+f.loadRadiance('data/mars/ang20140612t215931_data_dump.mat')
 f.loadConfig('config/config_inversion.json')
 wv, ref, radiance, config = f.getFiles()
 
@@ -49,6 +49,12 @@ m.initMCMC(constrain=True, rank=2)
 start_time = time.time()
 m.runAM(method)
 np.savetxt(setup.resultsDir + 'runtime.txt', np.array([time.time() - start_time]))
+
+
+
+
+
+
 
 
 
