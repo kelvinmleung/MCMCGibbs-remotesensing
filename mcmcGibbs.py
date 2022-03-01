@@ -114,7 +114,7 @@ class MCMCGibbs:
         logqZ = self.lognormal(z[:-2], mu, cov)
         logqX = self.lognormal(x[:-2], mu, cov)
         ratio = logposZ - logposX - logqZ + logqX
-        print('\t %10.3f | %10.3E %10.3E %10.3E %10.3E' % (ratio, logposZ, logposX, logqZ, logqX))
+        # print('\t %10.3f | %10.3E %10.3E %10.3E %10.3E' % (ratio, logposZ, logposX, logqZ, logqX))
 
         # return both acceptance ratio and logpos
         return np.minimum(1, np.exp(ratio)), logposZ, logposX
@@ -174,6 +174,18 @@ class MCMCGibbs:
                 # update linear operator conditioned on the atm
                 xAtm = x[-2:]
 
+                ##### TOGGLE THIS SECTION ON/OFF for isofit vs covariance proposal #####
+                rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
+                G = self.linOper(sphalb, transm, coszen, solar_irr)
+                yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
+                gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
+                mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+                chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
+
+            factor = 0.14
+            chol_gamma_prop = chol_gamma_refl * factor
+            #############################################################################
+            
             zRef = np.copy(x)
             zRef[:-2] = self.proposal(x[:-2], chol_gamma_prop)
 
