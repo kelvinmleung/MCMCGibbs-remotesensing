@@ -14,12 +14,12 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 
 
 ##### CONFIG #####
-resultsDir = '306_SNR50_RandWalkIsofitCovEps0_11_1M'
+resultsDir = '177_SNR50_IndepSampEps0_14_2M'
 setupDir = 'ang20140612'#'ang20170228'#
-method = 'RandWalk'
+method = 'IndepSamp'
 
-Nsamp = 1000000
-burn = 100000
+Nsamp = 2000000
+burn = 200000
 thinning = 10
 ##### CONFIG #####
 
@@ -29,8 +29,8 @@ f = FileProcessing(setupDir='setup/' + setupDir)
 # f.loadRadiance('data/beckmanlawn/ang20171108t184227_data_v2p11_BeckmanLawn.mat')
 # f.loadConfig('config/config_inversion.json')
 f.loadWavelength('data/wavelengths.txt')
-f.loadReflectance('data/306/insitu.txt')
-f.loadRadiance('data/306/ang20140612t215931_data_dump.mat')
+f.loadReflectance('data/177/insitu.txt')
+f.loadRadiance('data/177/ang20140612t215931_data_dump.mat')
 f.loadConfig('config/config_inversion.json')
 wv, ref, radiance, config = f.getFiles()
 

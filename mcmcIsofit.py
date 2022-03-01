@@ -90,7 +90,7 @@ class MCMCIsofit:
         if method == 'RandWalk':
             self.mcmc.adaptmRandWalk()
         elif method == 'IndepSamp':
-            self.mcmc.adaptm()   
+            self.mcmc.adaptmIndepSamp()   
         else:
             print('Error.')
 

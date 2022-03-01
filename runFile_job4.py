@@ -14,12 +14,12 @@ np.load = lambda *a,**k: np_load_old(*a, allow_pickle=True, **k)
 
 
 ##### CONFIG #####
-resultsDir = 'dark_SNR50_RandWalkIsofitCovEps0_11_1M'
+resultsDir = 'dark_SNR50_IndepSampEps0_14_2M'
 setupDir = 'ang20140612'#'ang20170228'#
-method = 'RandWalk'
+method = 'IndepSamp'
 
-Nsamp = 1000000
-burn = 100000
+Nsamp = 2000000
+burn = 200000
 thinning = 10
 ##### CONFIG #####
 

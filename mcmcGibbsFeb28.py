@@ -24,6 +24,7 @@ class MCMCGibbs:
         self.invNoiseCov = np.linalg.inv(self.noisecov)
 
     def unpackConfig(self, config):
+        # self.x0 = config["x0"]              # initial value of chain
         self.startX = config["startX"]      # initial value of chain
         self.Nsamp = config["Nsamp"]        # total number of MCMC samples
         self.burn = config["burn"]          # number of burn-in samples
@@ -75,14 +76,24 @@ class MCMCGibbs:
         z = mean + std * truncnorm.rvs(a,b)
         return z
 
+    # def proposalRef(self, mean, cov):
+    #     ''' Sample proposal from a normal distribution '''
+    #     zx = np.random.normal(0, 1, size=mean.size)
+    #     z = mean + np.linalg.cholesky(cov) @ zx
+        
+    #     return z
+
     def proposal(self, mean, covCholesky):
         ''' Sample proposal from a normal distribution '''
+        
         zx = np.random.normal(0, 1, size=mean.size)
         z = mean + covCholesky @ zx
+        
         return z
 
     def logpos(self, x):
         ''' Calculate log posterior '''
+        
         tPr = x - self.mu_x
         logprior = -1/2 * (tPr @ self.invGammaX @ tPr.T) 
         # logprior = -1/2 * (tPr[self.bandsX] @ self.invGammaX[self.bandsX,:][:,self.bandsX] @ tPr[self.bandsX].T) 
@@ -91,6 +102,22 @@ class MCMCGibbs:
         tLH = self.yobs - meas
         # loglikelihood = -1/2 * (tLH @ self.invNoiseCov @ tLH.T)
         loglikelihood = -1/2 * (tLH[self.bands] @ self.invNoiseCov[self.bands,:][:,self.bands] @ tLH[self.bands].T)
+        
+        # print('\tLogPrior/LLH', logprior, loglikelihood)
+        # # print('\t', logprior)
+        # print('\ttPrNorm', np.linalg.norm(tPr))
+        # print('\ttLHNorm', np.linalg.norm(tLH[self.bands]))
+
+
+        # plt.plot(self.mu_x[self.bands], '.', label='Prior')
+        # plt.plot(x[self.bands], '.',label='x')
+        # plt.legend()
+        # plt.show()
+
+        # plt.plot(meas[self.bands], '.', label='Predicted')
+        # plt.plot(self.yobs[self.bands], '.',label='Observed')
+        # plt.legend()
+        # plt.show()
 
         return logprior + loglikelihood
 
@@ -159,6 +186,7 @@ class MCMCGibbs:
         chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
         x[:-2] = mu_refl
 
+
         chol_gamma_prop = np.linalg.cholesky(self.gammapos_isofit[:-2,:-2]) * 0.11
 
         for i in range(self.Nsamp):
@@ -174,6 +202,15 @@ class MCMCGibbs:
                 # update linear operator conditioned on the atm
                 xAtm = x[-2:]
 
+                # rhoatm, sphalb, transm, coszen, solar_irr = self.unpackLUTparam(xAtm)
+                # G = self.linOper(sphalb, transm, coszen, solar_irr)
+                # yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
+                # gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
+                # mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+                # chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
+
+            # factor = 0.14
+            # chol_gamma_prop = chol_gamma_refl * factor
             zRef = np.copy(x)
             zRef[:-2] = self.proposal(x[:-2], chol_gamma_prop)
 
@@ -209,8 +246,13 @@ class MCMCGibbs:
         np.save(self.resultsDir + 'acceptAtm.npy', acceptAtm[::self.thinning])
         np.save(self.resultsDir + 'acceptRef.npy', acceptRef[::self.thinning])
     
-    def adaptmIndepSamp(self):
-        ''' Run Adaptive-Metropolis MCMC algorithm -- Independence Sampling method'''
+    # def smooth(self, y, box_pts):
+    #     box = np.ones(box_pts)/box_pts
+    #     y_smooth = np.convolve(y, box, mode='same')
+    #     return y_smooth
+
+    def adaptm(self):
+        ''' Run Adaptive-Metropolis MCMC algorithm '''
         x_vals = np.zeros([self.nx, self.Nsamp]) # store all samples
         logpos = np.zeros(self.Nsamp) # store the log posterior values
         acceptAtm = np.zeros(self.Nsamp, dtype=int)
@@ -222,6 +264,7 @@ class MCMCGibbs:
         x = self.x0               
         xAtm = x[-2:]       
         mu_refl = x[:-2]
+        chol_gamma_refl = np.linalg.cholesky(gamma_x) 
 
         self.propcovAtm = self.propcov[-2:,-2:]
         propStdAtm = np.sqrt(np.diag(self.propcovAtm))
@@ -236,6 +279,7 @@ class MCMCGibbs:
         inv_gamma_y = np.linalg.inv(gamma_y)
         gamma_refl = (np.identity(self.ny) - gamma_x @ G.T @ inv_gamma_y @ G) @ gamma_x
         mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+        chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
         
         x[:-2] = mu_refl
 
@@ -269,13 +313,26 @@ class MCMCGibbs:
                 yobs_adjust = self.yobs - coszen / np.pi * solar_irr * rhoatm 
                 gamma_refl = np.linalg.inv(G.T @ self.invNoiseCov @ G + self.invGammaX_ref)
                 mu_refl = gamma_refl @ (G.T @ self.invNoiseCov @ yobs_adjust + self.invGammaX_ref @ mu_x)
+                # chol_gamma_refl = np.linalg.cholesky(gamma_refl) 
 
-            factor = 0.14
+            # factor = 0.14
+            factor = 1
             gamma_prop = gamma_refl * (factor ** 2)
             chol_gamma_prop = np.linalg.cholesky(gamma_prop) 
             zRef = np.copy(x)
             zRef[:-2] = self.proposal(mu_refl, chol_gamma_prop)
+            # zRef[:-2] = self.smooth(zRef[:-2], 10)
 
+            # plt.plot(mu_refl, label='mean', alpha=0.9)
+            # plt.plot(x[:-2], label='current', alpha=0.7)
+            # plt.plot(zRef[:-2], label='proposal', alpha=0.5)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 1', alpha=0.6)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 2', alpha=0.6)
+            # # plt.plot(self.proposal(mu_refl, chol_gamma_prop), label='proposal 3', alpha=0.6)
+            # # plt.ylim([0.2,0.25])
+            # plt.ylim([0.1,0.3])
+            # plt.legend()
+            # plt.show()
 
             # print('xATM:', xAtm)
             # alphaRef, logposZ, logposX = self.alpha(x, zRef)
