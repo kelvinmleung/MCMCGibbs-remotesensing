@@ -323,8 +323,6 @@ class PlotFromFile:
         m = len(indset2)
         fig, ax = plt.subplots(n, m)
         levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
-        # cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
-        # cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
         
         for i in range(n):
             for j in range(m):
@@ -332,14 +330,13 @@ class PlotFromFile:
                 indY = indset2[j]
                 print(i,j)
                 ax[i,j], cfset = self.twoDimContour(indY, indX, ax[i,j], levs)
+                if j == 0:
+                    ax[i,j].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[i]]) + ' nm')
+                if i == n-1:
+                    ax[i,j].set_xlabel(r'$\lambda = $' + str(self.wavelengths[indset2[j]]) + ' nm')
+
         fig.suptitle('2D Contour Plots')
 
-        ax[0,0].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[0]]) + ' nm')
-        ax[1,0].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[1]]) + ' nm')
-        ax[2,0].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[2]]) + ' nm')
-        ax[2,0].set_xlabel(r'$\lambda = $' + str(self.wavelengths[indset2[0]]) + ' nm')
-        ax[2,1].set_xlabel(r'$\lambda = $' + str(self.wavelengths[indset2[1]]) + ' nm')
-        ax[2,2].set_xlabel(r'$\lambda = $' + str(self.wavelengths[indset2[2]]) + ' nm')
         handles, labels = ax[0,0].get_legend_handles_labels()
         fig.legend(handles, labels, loc='center right')
         fig.subplots_adjust(right=0.83)
@@ -350,8 +347,8 @@ class PlotFromFile:
 
     def twoDimContour(self, indX, indY, ax, levs):
 
-        x = self.x_plot[indX,:]
-        y = self.x_plot[indY,:]
+        x = self.x_plot[indX,::10]
+        y = self.x_plot[indY,::10]
 
         isofitPosX = self.isofitMuPos[indX]
         isofitPosY = self.isofitMuPos[indY]
@@ -373,8 +370,6 @@ class PlotFromFile:
         ax.set_xlim(xmin, xmax)
         ax.set_ylim(ymin, ymax)
 
-        levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
-
         # Contourf plot
         cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
         cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
@@ -383,71 +378,153 @@ class PlotFromFile:
         # plot truth, isofit, and mcmc 
         meanIsofit = np.array([isofitPosX, isofitPosY])
         meanMCMC = np.array([self.MCMCmean[indX], self.MCMCmean[indY]])
-        ax.plot(self.truth[indX], self.truth[indY], 'go', label='True reflectance', markersize=10)  
+        if indX < self.nx-2 and indY < self.nx-2:
+            ax.plot(self.truth[indX], self.truth[indY], 'go', label='True reflectance', markersize=10)  
         ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
         ax.plot(meanMCMC[0], meanMCMC[1], 'kx', label='MCMC', markersize=12)
             
         return ax, cfset
 
-    def kdcontouratm(self, indX, indY):
-        x_vals = np.load(self.resultsDir + 'mcmcchain.npy')
-        x_vals_plot = x_vals[:,self.burnthin:]
+    # def kdcontouratm(self, indX, indY):
+    #     x_vals = np.load(self.resultsDir + 'mcmcchain.npy')
+    #     x_vals_plot = x_vals[:,self.burnthin:]
 
-        x = x_vals_plot[indX,:]
-        y = x_vals_plot[indY,:]
+    #     x = x_vals_plot[indX,:]
+    #     y = x_vals_plot[indY,:]
 
-        isofitPosX = self.isofitMuPos[indX]
-        isofitPosY = self.isofitMuPos[indY]
-        xmin, xmax = min(min(x), isofitPosX), max(max(x), isofitPosX)
-        ymin, ymax = min(min(y), isofitPosY), max(max(y), isofitPosY)
+    #     isofitPosX = self.isofitMuPos[indX]
+    #     isofitPosY = self.isofitMuPos[indY]
+    #     xmin, xmax = min(min(x), isofitPosX), max(max(x), isofitPosX)
+    #     ymin, ymax = min(min(y), isofitPosY), max(max(y), isofitPosY)
 
-        if indX < self.nx-2 and indY < self.nx-2:
-            xmin, xmax = min(xmin, self.truth[indX]), max(xmax, self.truth[indX])
-            ymin, ymax = min(ymin, self.truth[indY]), max(ymax, self.truth[indY])
+    #     if indX < self.nx-2 and indY < self.nx-2:
+    #         xmin, xmax = min(xmin, self.truth[indX]), max(xmax, self.truth[indX])
+    #         ymin, ymax = min(ymin, self.truth[indY]), max(ymax, self.truth[indY])
 
-        # Peform the kernel density estimate
-        xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
-        positions = np.vstack([xx.ravel(), yy.ravel()])
-        values = np.vstack([x, y])
-        kernel = gaussian_kde(values)
-        f = np.reshape(kernel(positions).T, xx.shape)
-        f = f / np.max(f) # normalize
+    #     # Peform the kernel density estimate
+    #     xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+    #     positions = np.vstack([xx.ravel(), yy.ravel()])
+    #     values = np.vstack([x, y])
+    #     kernel = gaussian_kde(values)
+    #     f = np.reshape(kernel(positions).T, xx.shape)
+    #     f = f / np.max(f) # normalize
 
-        fig = plt.figure()
-        plt.title('Contour Plot of Posterior Samples')
-        ax = fig.gca()
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
+    #     fig = plt.figure()
+    #     plt.title('Contour Plot of Posterior Samples')
+    #     ax = fig.gca()
+    #     ax.set_xlim(xmin, xmax)
+    #     ax.set_ylim(ymin, ymax)
 
+    #     levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
+    #     # Contourf plot
+    #     cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
+    #     cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
+    #     plt.clabel(cset, levs, fontsize='smaller')
+
+    #     # plot truth, isofit, and mcmc 
+    #     meanIsofit = np.array([isofitPosX, isofitPosY])
+    #     meanMCMC = np.array([self.MCMCmean[indX], self.MCMCmean[indY]])
+    #     ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
+    #     ax.plot(meanMCMC[0], meanMCMC[1], 'kx', label='MCMC', markersize=12)
+
+    #     if indX < self.nx-2 and indY < self.nx-2:
+    #         # Label plot
+    #         # ax.clabel(cset, inline=1, fontsize=10)
+    #         ax.set_xlabel(r'$\lambda = $' + str(self.wavelengths[indX]) + ' nm')
+    #         ax.set_ylabel(r'$\lambda = $' + str(self.wavelengths[indY]) + ' nm')
+
+    #         # plot truth
+    #         ax.plot(self.truth[indX], self.truth[indY], 'ro', label='Truth', markersize=8)  
+    #     else:
+    #         if indX == self.nx-2:
+    #             ax.set_xlabel('AOD550')
+    #             ax.set_ylabel('H20STR')
+    #     ax.legend()
+    #     fig.colorbar(cfset)
+
+    #     fig.savefig(self.resultsDir + 'kdcontour_' + str(indX) + '_' + str(indY) + '.png', dpi=300)
+    #     return fig
+
+    def kdcontouratm(self):
+
+        fig, ax = plt.subplots(1, 1)
         levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
-        # Contourf plot
-        cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
-        cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
-        plt.clabel(cset, levs, fontsize='smaller')
+        
+        ax, cfset = self.twoDimContour(self.nx-2, self.nx-1, ax, levs)
+        ax.set_xlabel('AOD550')
+        ax.set_ylabel('H20STR')
+        ax.set_xlim([0,0.3])
+        fig.suptitle('Contour Plot for Atmospheric Parameters')
 
-        # plot truth, isofit, and mcmc 
-        meanIsofit = np.array([isofitPosX, isofitPosY])
-        meanMCMC = np.array([self.MCMCmean[indX], self.MCMCmean[indY]])
-        ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
-        ax.plot(meanMCMC[0], meanMCMC[1], 'kx', label='MCMC', markersize=12)
-
-        if indX < self.nx-2 and indY < self.nx-2:
-            # Label plot
-            # ax.clabel(cset, inline=1, fontsize=10)
-            ax.set_xlabel(r'$\lambda = $' + str(self.wavelengths[indX]) + ' nm')
-            ax.set_ylabel(r'$\lambda = $' + str(self.wavelengths[indY]) + ' nm')
-
-            # plot truth
-            ax.plot(self.truth[indX], self.truth[indY], 'ro', label='Truth', markersize=8)  
-        else:
-            if indX == self.nx-2:
-                ax.set_xlabel('AOD550')
-                ax.set_ylabel('H20STR')
-        ax.legend()
+        handles, labels = ax.get_legend_handles_labels()
+        fig.legend(handles, labels, loc='center right')
+        # fig.subplots_adjust(right=0.83)
+        # cbar_ax = fig.add_axes([0.85, 0.15, 0.02, 0.7])
+        # fig.colorbar(cfset, cax = cbar_ax)
         fig.colorbar(cfset)
+        # fig.set_size_inches(12, 8)
+        fig.savefig(self.resultsDir + 'atmcontour.png', dpi=300)
 
-        fig.savefig(self.resultsDir + 'kdcontour_' + str(indX) + '_' + str(indY) + '.png', dpi=300)
         return fig
+
+        # x_vals = np.load(self.resultsDir + 'mcmcchain.npy')
+        # x_vals_plot = x_vals[:,self.burnthin:]
+
+        # x = x_vals_plot[indX,:]
+        # y = x_vals_plot[indY,:]
+
+        # isofitPosX = self.isofitMuPos[indX]
+        # isofitPosY = self.isofitMuPos[indY]
+        # xmin, xmax = min(min(x), isofitPosX), max(max(x), isofitPosX)
+        # ymin, ymax = min(min(y), isofitPosY), max(max(y), isofitPosY)
+
+        # if indX < self.nx-2 and indY < self.nx-2:
+        #     xmin, xmax = min(xmin, self.truth[indX]), max(xmax, self.truth[indX])
+        #     ymin, ymax = min(ymin, self.truth[indY]), max(ymax, self.truth[indY])
+
+        # # Peform the kernel density estimate
+        # xx, yy = np.mgrid[xmin:xmax:100j, ymin:ymax:100j]
+        # positions = np.vstack([xx.ravel(), yy.ravel()])
+        # values = np.vstack([x, y])
+        # kernel = gaussian_kde(values)
+        # f = np.reshape(kernel(positions).T, xx.shape)
+        # f = f / np.max(f) # normalize
+
+        # fig = plt.figure()
+        # plt.title('Contour Plot of Posterior Samples')
+        # ax = fig.gca()
+        # ax.set_xlim(xmin, xmax)
+        # ax.set_ylim(ymin, ymax)
+
+        # levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
+        # # Contourf plot
+        # cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
+        # cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
+        # plt.clabel(cset, levs, fontsize='smaller')
+
+        # # plot truth, isofit, and mcmc 
+        # meanIsofit = np.array([isofitPosX, isofitPosY])
+        # meanMCMC = np.array([self.MCMCmean[indX], self.MCMCmean[indY]])
+        # ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
+        # ax.plot(meanMCMC[0], meanMCMC[1], 'kx', label='MCMC', markersize=12)
+
+        # if indX < self.nx-2 and indY < self.nx-2:
+        #     # Label plot
+        #     # ax.clabel(cset, inline=1, fontsize=10)
+        #     ax.set_xlabel(r'$\lambda = $' + str(self.wavelengths[indX]) + ' nm')
+        #     ax.set_ylabel(r'$\lambda = $' + str(self.wavelengths[indY]) + ' nm')
+
+        #     # plot truth
+        #     ax.plot(self.truth[indX], self.truth[indY], 'ro', label='Truth', markersize=8)  
+        # else:
+        #     if indX == self.nx-2:
+        #         ax.set_xlabel('AOD550')
+        #         ax.set_ylabel('H20STR')
+        # ax.legend()
+        # fig.colorbar(cfset)
+
+        # fig.savefig(self.resultsDir + 'kdcontour_' + str(indX) + '_' + str(indY) + '.png', dpi=300)
+        # return fig
 
 
     def plotPosSparsity(self, tol):
@@ -510,7 +587,7 @@ class PlotFromFile:
 
     def autocorr(self, x_elem):
         Nsamp = self.NsampAC
-        meanX = np.mean(x_elem)
+        # meanX = np.mean(x_elem)
         varX = np.var(x_elem)
         ac = np.zeros(Nsamp-1)
 
@@ -525,6 +602,53 @@ class PlotFromFile:
         for i in range(len(ac)):
             denom = denom + ac[i]
         return self.Nsamp / (1 + 2 * denom)
+
+    def genESSspectrum(self):
+        essSpec = np.zeros(self.nx)
+        for i in range(self.nx):
+            print('Calculating ESS, index =', i)
+            ac = self.autocorr(self.x_plot[i])
+            essSpec[i] = self.ESS(ac)
+
+        np.save(self.resultsDir + 'ESSspectrum.npy', essSpec)
+        
+    def ESSanalysis(self):
+        essSpec = np.load(self.resultsDir + 'ESSspectrum.npy')
+        essRef = essSpec[:self.nx-2]
+        print('Reflectances:')
+        print('\tMin ESS:', np.min(abs(essRef)))
+        print('\tMed ESS:', np.median(essRef))
+        print('\tMax ESS:', np.max(essRef))
+        print('AOD ESS:', essSpec[-2])
+        print('H2O ESS:', essSpec[-1])
+
+    def MCMCIsofitEig(self):
+
+        covIsofit = self.isofitGammaPos[:,self.bands][self.bands,:] 
+        covMCMC = self.MCMCcov[:,self.bands][self.bands,:] 
+
+        eigs, eigvec = s.linalg.eigh(covIsofit, covMCMC, eigvals_only=False)
+        eigs = np.flip(eigs, axis=0)
+        eigvec = np.flip(eigvec, axis=0)
+        plt.figure()
+        plt.semilogy(eigs)
+        plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
+        plt.xlabel('Large eig signifies larger Isofit variance')
+
+        plt.figure()
+        for i in range(5):
+            plt.plot(self.bands, eigvec[:,i], label='lambda='+str(eigs[i]))
+        plt.xlabel('Wavelength')
+        plt.title('Eigenvectors of Isofit vs MCMC Covariances')
+        plt.legend()
+
+        # plt.figure()
+        # plt.plot()
+        # print(eigs)
+        # for j in range(eigs.size):
+        #     forstner = forstner + (np.log(eigs[j])) ** 2
+        # forstner = np.sqrt(forstner)
+
 
     def diagnostics(self, indSet=[10,20,50,100,150,160,250,260]):
         # assume there are 10 elements in indSet
@@ -595,6 +719,8 @@ class PlotFromFile:
         plt.legend()
         plt.ylim([0, 1])
         plt.savefig(self.resultsDir + 'acceptance.png', dpi=300)
+    
+    
 
 
     def comparePosCov(self):
