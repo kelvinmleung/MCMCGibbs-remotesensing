@@ -29,8 +29,10 @@ p = ResultPlot(a.exportParam())
 # a.plotacceptance()
 # a.plotlogpos()
 
-# a.genESSspectrum()
-a.ESSanalysis()
+# a.plotac(132)
+
+a.genESSspectrum()
+# a.ESSanalysis()
 # a.MCMCIsofitEig()
 # a.comparePosCov()
 # a.comparePosCorr()

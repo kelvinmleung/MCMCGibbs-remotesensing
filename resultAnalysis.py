@@ -174,32 +174,43 @@ class ResultAnalysis:
         print('\tMCMC:', weightErrMCMC)
 
     def autocorr(self, x_elem):
-        Nsamp = self.NAC
+        x = x_elem
+        Nsamp = len(x)
+        laglen = 2000
+        # varX = np.var(x_elem)
+        meanX = np.mean(x)
+        ac = np.zeros(laglen)            
+        denom = np.sum((x - np.ones(Nsamp)*meanX)**2)
 
-        varX = np.var(x_elem)
-        ac = np.zeros(Nsamp-1)
-
-        for k in range(Nsamp-1):
-            cov = np.cov(x_elem[:Nsamp-k], x_elem[k:Nsamp])
-            ac[k] = cov[1,0] / varX
-        # ac = ac[:int(len(ac)/2)]
+        for k in range(laglen):
+            one = np.ones(Nsamp - k)
+            num = np.sum((x[k:] - one*meanX) * (x[:Nsamp-k] - one*meanX))
+            ac[k] = num / denom
+        #     cov = np.cov(x_elem[:Nsamp-k], x_elem[k:Nsamp]) 
+        #     ac[k] = cov[1,0] * (Nsamp-k) / (varX * Nsamp)
         return ac
 
+    def plotac(self, ind):
+        
+        ac = self.autocorr(self.x_plot[ind,:])
+        print(np.sum(ac))
+        laglen=len(ac)
+        plt.figure()
+        plt.plot(list(range(laglen)), ac[:laglen], '.')
+
     def ESS(self, ac):
-        denom = 0
-        for i in range(len(ac)):
-            denom = denom + ac[i]
-        return self.Nsamp / (1 + 2 * denom)
+        # denom = 0
+        # for i in range(len(ac)):
+        #     denom = denom + ac[i]
+        denom = np.sum(ac)
+        # print('IACT:', denom)
+        return self.Nthin / (1 + 2 * denom)
 
     def genESSspectrum(self):
         essSpec = np.zeros(self.nx)
         for i in range(self.nx):
             print('Calculating ESS, index =', i)
-            ac = self.autocorr(self.x_plot[i,:self.NAC])
-            if i == 2:
-                plt.figure()
-                plt.plot(list(range(len(ac))), ac, '.')
-                plt.show()
+            ac = self.autocorr(self.x_plot[i,:])
             essSpec[i] = self.ESS(ac)
             print('\t', essSpec[i])
         np.save(self.resultsDir + 'ESSspectrum.npy', essSpec)
