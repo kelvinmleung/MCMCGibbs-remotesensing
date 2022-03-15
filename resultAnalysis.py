@@ -239,7 +239,7 @@ class ResultAnalysis:
 
         eigs, eigvec = s.linalg.eigh(covIsofit, covMCMC, eigvals_only=False)
         eigs = np.flip(eigs, axis=0)
-        eigvec = np.flip(eigvec, axis=0)
+        eigvec = np.flip(eigvec, axis=1)
         fig = plt.figure()
         plt.semilogy(eigs)
         plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
@@ -248,12 +248,38 @@ class ResultAnalysis:
 
 
         fig = plt.figure()
-        for i in range(3):
+        for i in [0,1,-1,-2]:
             plt.plot(self.bands, eigvec[:,i], '-', label='nu='+str(round(eigs[i],2)))
         plt.xlabel('Wavelength')
         plt.title('Eigenvectors of Isofit vs MCMC Covariances')
         plt.legend()
         fig.savefig(self.resultsDir + 'eigvec.png', dpi=300)  
+
+        fig = plt.figure()
+        for i in [0,1,-1,-2]:
+            plt.semilogy(self.bands, eigs[i] * eigvec[:,i]**2, '-', label='nu='+str(round(eigs[i],2)))
+        plt.xlabel('Wavelength')
+        plt.ylabel(r'$\lambda_i v_{ij}^2$')
+        plt.title('Weighted Squared Eigenvectors of Isofit vs MCMC Covariances')
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigvec_weight.png', dpi=300)  
+
+        fig = plt.figure()
+        plot1 = 0
+        plot2 = 0
+        top = 10
+        for i in range(top):
+            plot1 = eigs[i] * eigvec[:,i]**2
+            plot2 = eigs[-1-i] * eigvec[:,-1-i]**2
+        
+        plt.semilogy(self.bands, plot1, '-', label='Isofit var > MCMC var')
+        plt.semilogy(self.bands, plot2, '-', label='MCMC var > Isofit var')
+        plt.xlabel('Wavelength')
+        plt.ylabel(r'$\sum_i \lambda_i v_{ij}^2$')
+        plt.title('Eigendirections, First ' + str(top))
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigdir.png', dpi=300)  
+
 
         # plt.figure()
         # plt.plot()
@@ -519,44 +545,7 @@ class ResultAnalysis:
         print('Log Det:       %10.3E  %10.3E        ' % (detIsofit, detMCMC))
         print('Forstner:              %10.3f  %10.3f' % (forstner, forstner/forstPr))
 
-
-
-    # def plot2ac(self, indset=[120,250,410]):
-
-    #     fig, axs = plt.subplots(1, len(indset))
-
-    #     for i in range(len(indset)):
-    #         # print('Autocorr:', indset[i])
-
-    #         ac = self.autocorr(self.x_vals_ac[indset[i],:])
-    #         ac2 = self.autocorr(self.x_vals_ac_noLIS[indset[i],:])
-
-    #         ac = ac[:self.numPlotAC]
-    #         ac2 = ac2[:self.numPlotAC]
-
-    #         print('Index:', indset[i])
-    #         print('ESS LIS:', self.ESS(ac))
-    #         print('ESS No LIS:', self.ESS(ac2))
-
-    #         # plot autocorrelation
-    #         axs[i].plot(range(1,len(ac)+1), ac, 'b', label='LIS r = 100')
-    #         axs[i].plot(range(1,len(ac2)+1), ac2, 'r', label='No LIS')
-    #         if indset[i] < 425:
-    #             axs[i].set_title(r'$\lambda = $' + str(self.wavelengths[indset[i]]) + ' nm')
-    #         elif indset[i] == 425:
-    #             axs[i].set_title('AOD')
-    #         elif indset[i] == 426:
-    #             axs[i].set_title('H2O')
-        
-    #     axs[0].set_xlabel('Lag', fontsize=14)
-    #     axs[0].set_ylabel('Autocorrelation', fontsize=14)
-        
-    #     handles, labels = axs[0].get_legend_handles_labels()
-    #     fig.legend(handles, labels, loc='center right', fontsize=14)
-    #     # fig2.savefig(self.resultsDir + 'autocorr.png', dpi=300)
-
-
-
+    
     
 
     

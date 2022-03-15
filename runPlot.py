@@ -7,7 +7,7 @@ from resultAnalysis import ResultAnalysis
 from resultPlot import ResultPlot
 
 
-resultsDir = '../resultsGibbs/177_SNR50_RandWalkIsofitCovEps0_11_2M/'
+resultsDir = '../resultsGibbs/dark_SNR50_RandWalkIsofitCovEps0_11_2M/'
 # resultsDir = '../resultsGibbs/177_SNR50_RandWalkIsofitCovEps0_11_1M_noThin/'
 setupDir = 'setup/ang20140612/' #'setup/ang20170228/' #
 a = ResultAnalysis(setupDir, resultsDir)
@@ -17,7 +17,7 @@ p = ResultPlot(a.exportParam())
 # p.plotRadiance()
 # p.plotPosterior()
 # p.plotError()
-# p.plot2Dcontour(vis='samples')
+# # p.plot2Dcontour(vis='samples')
 # p.contourRef(vis='contour')
 # p.contourAtm()
 
@@ -28,8 +28,6 @@ p = ResultPlot(a.exportParam())
 # a.traceAtm()
 # a.plotacceptance()
 # a.plotlogpos()
-
-# a.plotac(132)
 
 a.genESSspectrum()
 # a.ESSanalysis()
