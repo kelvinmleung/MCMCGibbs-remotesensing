@@ -199,12 +199,7 @@ class ResultAnalysis:
         plt.plot(list(range(laglen)), ac[:laglen], '.')
 
     def ESS(self, ac):
-        # denom = 0
-        # for i in range(len(ac)):
-        #     denom = denom + ac[i]
-        denom = np.sum(ac)
-        # print('IACT:', denom)
-        return self.Nthin / (1 + 2 * denom)
+        return self.Nthin / (1 + 2 * np.sum(ac))
 
     def genESSspectrum(self):
         essSpec = np.zeros(self.nx)
@@ -230,6 +225,13 @@ class ResultAnalysis:
         print('\tMax ESS:', np.max(essRef))
         print('AOD ESS:', essSpec[-2])
         print('H2O ESS:', essSpec[-1])
+
+    def shrinkCov(self):
+        
+        covBands = self.MCMCcov[self.bands,:][:,self.bands]
+        # figure out how to deal with deep water bands
+
+
 
 
     def MCMCIsofitEig(self):
@@ -289,55 +291,9 @@ class ResultAnalysis:
         # forstner = np.sqrt(forstner)
 
 
-    # def diagnostics(self, indSet=[20,50,80,110,140,170,230,250,280,250,380,410]):
-    #     # assume there are 12 elements in indSet
-    #     # default: indSet = [10,20,50,100,150,160,250,260,425,426]
-    #     if self.nx-2 not in indSet:
-    #         indSet.extend([self.nx-2, self.nx-1]) 
-
-    #     N = self.x_vals.shape[1]
-    #     numPairs = int(len(indSet) / 2) 
-
-
-    #     # subplot setup
-    #     fig1, axs1 = plt.subplots(numPairs, 2)
-    #     # fig2, axs2 = plt.subplots(numPairs, 2)
-    #     xPlot = np.zeros(numPairs * 2, dtype=int)
-    #     yPlot = np.zeros(numPairs * 2, dtype=int)
-    #     xPlot[::2] = range(numPairs)
-    #     xPlot[1::2] = range(numPairs)
-    #     yPlot[1::2] = 1
-
-    #     for i in range(len(indSet)):
-    #         # print('Diagnostics:',indSet[i])
-    #         x_elem = self.x_vals[indSet[i],:]
-    #         xp = xPlot[i]
-    #         yp = yPlot[i]
-
-    #         # plot trace
-    #         axs1[xp,yp].plot(range(N) * self.thinning, x_elem)
-    #         axs1[xp,yp].set_title('Trace - Index ' + str(indSet[i]))
-
-    #         # plot autocorrelation
-    #         # ac = self.autocorr(self.x_plot[indSet[i]])
-    #         # ac = ac[:int(len(ac)/2)]
-    #         # axs2[xp,yp].plot(range(1,len(ac)+1) * self.thinning, ac)
-    #         # axs2[xp,yp].set_title('Autocorrelation - Index ' + str(indSet[i]))
-
-    #     fig1.set_size_inches(5, 7)
-    #     fig1.tight_layout()
-    #     fig1.savefig(self.resultsDir + 'trace.png', dpi=300)
-    #     # fig2.set_size_inches(5, 7)
-    #     # fig2.tight_layout()
-    #     # fig2.savefig(self.resultsDir + 'autocorr.png', dpi=300)
-
     def traceRef(self, indset=[20,50,80,110,140,170,230,250,280,250,380,410]):
         n = 4
         m = 3
-
-        # n = int(len(indset)/4)
-        # m = int(len(indset)/n)
-
         fig, ax = plt.subplots(n, m)
         for i in range(n):
             for j in range(m):
@@ -347,11 +303,6 @@ class ResultAnalysis:
                 ax[i,j].set_title(r'$\lambda = $' + str(self.wavelengths[ind]) + ' nm')
 
         fig.suptitle('Trace - Reflectances')
-
-
-        # handles, labels = ax[0,0].get_legend_handles_labels()
-        # fig.legend(handles, labels, loc='center right')
-        # fig.subplots_adjust(right=0.83)
         fig.set_size_inches(15, 9)
         fig.tight_layout()
         fig.savefig(self.resultsDir + 'traceRef.png', dpi=300)  
@@ -374,8 +325,6 @@ class ResultAnalysis:
         
     def plotacceptance(self):
         # acceptance rate
-        acceptRateAtm= np.mean(self.acceptAtm[self.burn:])
-        acceptRateRef= np.mean(self.acceptRef[self.burn:])
         binWidth = 1000
         numBin = int(self.Nsamp / binWidth)
         xPlotAccept = np.arange(binWidth, self.Nsamp+1, binWidth) * self.thinning
@@ -459,10 +408,6 @@ class ResultAnalysis:
                 ax[i,j].set_title(r'$\lambda = $' + str(self.wavelengths[ind]) + ' nm')
 
         fig.suptitle('QQ Plots - Reflectances')
-
-        # handles, labels = ax[0,0].get_legend_handles_labels()
-        # fig.legend(handles, labels, loc='center right')
-        # fig.subplots_adjust(right=0.83)
         fig.set_size_inches(15, 9)
         fig.tight_layout()
         fig.savefig(self.resultsDir + 'qqRef.png', dpi=300)      
