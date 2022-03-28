@@ -226,13 +226,120 @@ class ResultAnalysis:
         print('AOD ESS:', essSpec[-2])
         print('H2O ESS:', essSpec[-1])
 
+    # def shrinkCov(self):
+    #     # usable bands: 11-190, 221-286, 341-420
+    #     beg = [11,100,221,341]
+    #     end = [99,190,286,420]
+    #     numRow = 40
+    #     numPerSection = 10
+    #     transMat = np.zeros([numRow,self.nx-2])
+    #     # k = 0
+    #     for i in range(len(beg)):
+    #         k = 0
+    #         j = beg[i]
+    #         while j <= end[i]:
+    #             print(j, i*numPerSection + k)
+    #             transMat[i*numPerSection + k, j] = 1
+    #             # transMat[k,j] = 1
+    #             j = j + 1
+    #             print(j - beg[i])
+    #             print((end[i] - beg[i]) / numPerSection * k)
+    #             if j - beg[i] >= (end[i] - beg[i]) / numPerSection * k:
+
+    #                 k = k + 1
+    #             # if j >= k * 11:
+    #             #     k = k + 1
+    #     for i in range(numRow):
+    #         print(transMat[i,:].astype(int))
+    #     # for i in range(numRow):
+    #     #     # print(np.sum(transMat[i,:]))
+    #     #     transMat[i,:] = transMat[i,:] / np.sum(transMat[i,:])
+    #     #     print(transMat[i,:].round(2))
+            
+    #     # self.transMat = transMat
+    #     # self.MCMCcovshrink = transMat @ self.MCMCcov @ transMat.T
+    #     # covBands = self.MCMCcov[self.bands,:][:,self.bands]
+    #     # figure out how to deal with deep water bands
+
+    #     return transMat
+
     def shrinkCov(self):
+        # usable bands: 11-190, 221-286, 341-420
+        '''Want to average across around 8-10 bands to shrink the covariance matrix.
+        Need to take into account the gaps across deep water spectra (separate the wavelength sections)'''
+        beg = [11,100,221,341]
+        end = [99,190,286,420]
+        numRow = 40
+        numPerSec = 10
+        transMat = np.zeros([numRow,self.nx-2])
+        wv = np.zeros(numRow)
+        for i in range(len(beg)):
+            j = beg[i]
+            k = 1
+            while j <= end[i]:
+                transMat[i*numPerSec+k-1, j] = 1
+                wv[i*numPerSec+k-1] = j - 4
+                # print(i, j, k, i*numPerSec+k-1, j-beg[i], (end[i]-beg[i])/10 * k)
+                if j - beg[i] >= (end[i]-beg[i])/10 * k:
+                    k = k + 1
+                j = j + 1
+        for i in range(numRow):
+            transMat[i,:] = transMat[i,:] / np.sum(transMat[i,:])
+            
+        return wv, transMat
+       
+    def MCMCIsofitEigShrink(self):
+
+        wv, transMat = self.shrinkCov()
+        bands = list(range(transMat.shape[0]))
+
+        covIsofit = transMat @ self.isofitGammaPos[:self.nx-2,:self.nx-2] @ transMat.T
+        covMCMC = transMat @ self.MCMCcov[:self.nx-2,:self.nx-2] @ transMat.T
+
+        eigs, eigvec = s.linalg.eigh(covIsofit, covMCMC, eigvals_only=False)
+        eigs = np.flip(eigs, axis=0)
+        eigvec = np.flip(eigvec, axis=1)
+        fig = plt.figure()
+        plt.semilogy(eigs)
+        plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
+        plt.xlabel('Large eig signifies larger Isofit variance')
+        fig.savefig(self.resultsDir + 'eigval.png', dpi=300)  
+
+
+        fig = plt.figure()
+        for i in [0,1,-1,-2]:
+            plt.semilogy(wv, eigvec[:,i], '-', label='nu='+str(round(eigs[i],2)))
+        plt.xlabel('Wavelength')
+        plt.title('Eigenvectors of Isofit vs MCMC Covariances')
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigvec.png', dpi=300)  
+
+        fig = plt.figure()
+        for i in [0,1,-1,-2]:
+            plt.semilogy(wv, eigs[i] * eigvec[:,i]**2, '-', label='nu='+str(round(eigs[i],2)))
+        plt.xlabel('Wavelength')
+        plt.ylabel(r'$\lambda_i v_{ij}^2$')
+        plt.title('Weighted Squared Eigenvectors of Isofit vs MCMC Covariances')
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigvec_weight.png', dpi=300)  
+
+        fig = plt.figure()
+        plot1 = 0
+        plot2 = 0
+        top = 10
+        for i in range(top):
+            plot1 = eigs[i] * eigvec[:,i]**2
+            plot2 = eigs[-1-i] * eigvec[:,-1-i]**2
         
-        covBands = self.MCMCcov[self.bands,:][:,self.bands]
-        # figure out how to deal with deep water bands
+        plt.semilogy(wv, plot1, '-', label='Isofit var > MCMC var')
+        plt.semilogy(wv, plot2, '-', label='MCMC var > Isofit var')
+        plt.xlabel('Wavelength')
+        plt.ylabel(r'$\sum_i \lambda_i v_{ij}^2$')
+        plt.title('Eigendirections, First ' + str(top))
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigdir.png', dpi=300)  
 
-
-
+        
 
     def MCMCIsofitEig(self):
 

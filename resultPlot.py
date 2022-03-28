@@ -173,7 +173,6 @@ class ResultPlot:
         n = len(indset1)
         m = len(indset2)
         fig, ax = plt.subplots(n, m)
-        # levs = [0.05, 0.2,0.4,0.7,1]#, 0.05, 0.1, 0.2, 0.5, 1]
         levs = [0.03, 0.14, 0.6, 1]
         
         for i in range(n):
@@ -218,6 +217,37 @@ class ResultPlot:
         fig.savefig(self.resultsDir + 'atmcontour.png', dpi=300)
 
         return fig
+
+    def corrRef(self, indset1=[20,80,140,230,280,380], indset2=[50,110,170,250,350,410]):
+        
+        n = len(indset1)
+        m = len(indset2)
+        fig, ax = plt.subplots(n, m)
+        # levs = [0.03, 0.14, 0.6, 1]
+
+        self.isofitCorr = self.covtocorr(self.isofitGammaPos)
+        self.MCMCCorr = self.covtocorr(self.MCMCcov)
+        
+        for i in range(n):
+            for j in range(m):
+                indX = indset1[i]
+                indY = indset2[j]
+                
+                ax[i,j] = self.twoDimCorr(indY, indX, ax[i,j])
+                # ax[i,j].set_aspect('equal','box')
+                if j == 0:
+                    ax[i,j].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[i]]) + ' nm')
+                if i == n-1:
+                    ax[i,j].set_xlabel(r'$\lambda = $' + str(self.wavelengths[indset2[j]]) + ' nm')
+
+        fig.suptitle('2D Correlation Plots')
+
+        handles, labels = ax[0,0].get_legend_handles_labels()
+        fig.legend(handles, labels, loc='center right')
+        # fig.subplots_adjust(right=0.83)
+        # fig.tight_layout()
+        fig.set_size_inches(18, 10)
+        fig.savefig(self.resultsDir + '2Dcorr.png', dpi=300)
 
     def drawEllipse(self, mean, cov, ax, colour):
         ''' Helper function for twoDimSamples '''
@@ -296,6 +326,25 @@ class ResultPlot:
         self.drawEllipse(meanIsofit, covIsofit, ax, colour='red')
             
         return ax, cfset
+
+    def covtocorr(self, cov):
+        stddev =  np.sqrt(np.diag(cov))
+        denom = np.diag(np.ones(self.nx) / stddev)
+        return denom @ cov @ denom
+
+
+    def twoDimCorr(self, indX, indY, ax):
+        x_vals = self.x_plot
+        meanzero = np.zeros(2)
+        corrIsofit = self.isofitCorr[np.ix_([indX,indY],[indX,indY])]
+        corrMCMC = self.MCMCCorr[np.ix_([indX,indY],[indX,indY])]
+
+        ax.plot(meanzero[0], meanzero[1], 'kx', label='Laplace', markersize=12)
+        self.drawEllipse(meanzero, corrIsofit, ax, colour='black')
+        ax.plot(meanzero[0], meanzero[1], 'bx', label='MCMC', markersize=12)
+        self.drawEllipse(meanzero, corrMCMC, ax, colour='blue')
+        
+        return ax
 
     def plotPosSparsity(self, tol):
 
