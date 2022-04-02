@@ -214,7 +214,7 @@ class ResultAnalysis:
         essSpec = np.load(self.resultsDir + 'ESSspectrum.npy')
         essRef = essSpec[self.bands]
         fig = plt.figure()
-        plt.semilogy(self.wavelengths, essSpec[:self.nx-2], '.')
+        plt.semilogy(self.wavelengths[self.bands], essSpec[self.bands], 'b.')
         plt.title('Effective Sample Size - Reflectances')
         plt.xlabel('Wavelength')
         plt.ylabel('ESS')
@@ -291,7 +291,7 @@ class ResultAnalysis:
     def MCMCIsofitEigShrink(self):
 
         wv, transMat = self.shrinkCov()
-        bands = list(range(transMat.shape[0]))
+        # bands = list(range(transMat.shape[0]))
 
         covIsofit = transMat @ self.isofitGammaPos[:self.nx-2,:self.nx-2] @ transMat.T
         covMCMC = transMat @ self.MCMCcov[:self.nx-2,:self.nx-2] @ transMat.T
@@ -300,7 +300,8 @@ class ResultAnalysis:
         eigs = np.flip(eigs, axis=0)
         eigvec = np.flip(eigvec, axis=1)
         fig = plt.figure()
-        plt.semilogy(eigs)
+        plt.semilogy(eigs,'.')
+        plt.plot([0,len(eigs)], [1,1], '--')
         plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
         plt.xlabel('Large eig signifies larger Isofit variance')
         fig.savefig(self.resultsDir + 'eigval.png', dpi=300)  
@@ -350,23 +351,35 @@ class ResultAnalysis:
         eigs = np.flip(eigs, axis=0)
         eigvec = np.flip(eigvec, axis=1)
         fig = plt.figure()
-        plt.semilogy(eigs)
+        plt.semilogy(eigs,'b.')
+        plt.plot([0,len(eigs)], [1,1], 'r--')
         plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
         plt.xlabel('Large eig signifies larger Isofit variance')
         fig.savefig(self.resultsDir + 'eigval.png', dpi=300)  
 
 
         fig = plt.figure()
-        for i in [0,1,-1,-2]:
-            plt.plot(self.bands, eigvec[:,i], '-', label='nu='+str(round(eigs[i],2)))
+        fig.set_size_inches(8, 3)
+        for i in [0,1,2]:
+            plt.plot(self.wavelengths[self.bands], eigvec[:,i], '-', label='nu='+str(round(eigs[i],2)), alpha=0.8, linewidth=0.7)
         plt.xlabel('Wavelength')
-        plt.title('Eigenvectors of Isofit vs MCMC Covariances')
+        plt.title('Eigenvectors where Isofit var > MCMC var')
         plt.legend()
-        fig.savefig(self.resultsDir + 'eigvec.png', dpi=300)  
+        fig.savefig(self.resultsDir + 'eigvecIsofitGreater.png', dpi=300)  
 
         fig = plt.figure()
+        fig.set_size_inches(8, 3)
+        for i in [-1,-2,-3]:
+            plt.plot(self.wavelengths[self.bands], eigvec[:,i], '-', label='nu='+str(round(eigs[i],2)), alpha=0.8, linewidth=0.7)
+        plt.xlabel('Wavelength')
+        plt.title('Eigenvectors where MCMC var > Isofit var')
+        plt.legend()
+        fig.savefig(self.resultsDir + 'eigvecMCMCGreater.png', dpi=300)  
+
+        fig = plt.figure()
+        fig.set_size_inches(8, 3)
         for i in [0,1,-1,-2]:
-            plt.semilogy(self.bands, eigs[i] * eigvec[:,i]**2, '-', label='nu='+str(round(eigs[i],2)))
+            plt.semilogy(self.wavelengths[self.bands], eigs[i] * eigvec[:,i]**2, '-', label='nu='+str(round(eigs[i],2)), alpha=0.8, linewidth=0.7)
         plt.xlabel('Wavelength')
         plt.ylabel(r'$\lambda_i v_{ij}^2$')
         plt.title('Weighted Squared Eigenvectors of Isofit vs MCMC Covariances')
@@ -381,21 +394,14 @@ class ResultAnalysis:
             plot1 = eigs[i] * eigvec[:,i]**2
             plot2 = eigs[-1-i] * eigvec[:,-1-i]**2
         
-        plt.semilogy(self.bands, plot1, '-', label='Isofit var > MCMC var')
-        plt.semilogy(self.bands, plot2, '-', label='MCMC var > Isofit var')
+        plt.semilogy(self.wavelengths[self.bands], plot1, '-', label='Isofit var > MCMC var', alpha=0.8, linewidth=0.7)
+        plt.semilogy(self.wavelengths[self.bands], plot2, '-', label='MCMC var > Isofit var', alpha=0.8, linewidth=0.7)
         plt.xlabel('Wavelength')
         plt.ylabel(r'$\sum_i \lambda_i v_{ij}^2$')
         plt.title('Eigendirections, First ' + str(top))
+        fig.set_size_inches(8, 3)
         plt.legend()
         fig.savefig(self.resultsDir + 'eigdir.png', dpi=300)  
-
-
-        # plt.figure()
-        # plt.plot()
-        # print(eigs)
-        # for j in range(eigs.size):
-        #     forstner = forstner + (np.log(eigs[j])) ** 2
-        # forstner = np.sqrt(forstner)
 
 
     def traceRef(self, indset=[20,50,80,110,140,170,230,250,280,250,380,410]):
@@ -502,9 +508,10 @@ class ResultAnalysis:
         fig.savefig(self.resultsDir + 'kstest.png', dpi=300)      
 
     
-    def qqRef(self, indset=[20,50,80,110,140,170,230,250,280,250,380,410]):
+    # def qqRef(self, indset=[20,50,80,110,140,170,230,250,280,250,380,410]):
+    def qqRef(self, indset=[20,50,80,140,270,400]):
 
-        n = int(len(indset)/4)
+        n = int(len(indset)/3)
         m = int(len(indset)/n)
         fig, ax = plt.subplots(n, m)
         
@@ -515,7 +522,7 @@ class ResultAnalysis:
                 ax[i,j].set_title(r'$\lambda = $' + str(self.wavelengths[ind]) + ' nm')
 
         fig.suptitle('QQ Plots - Reflectances')
-        fig.set_size_inches(15, 9)
+        fig.set_size_inches(10, 6)
         fig.tight_layout()
         fig.savefig(self.resultsDir + 'qqRef.png', dpi=300)      
 

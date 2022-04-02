@@ -66,11 +66,13 @@ class ResultPlot:
             plt.semilogy(wl[r3[0]:r3[1]], y[r3[0]:r3[1]], linestyle, linewidth=linewidth)
 
     def plotPosterior(self):
-
+        
+        # refl mean
         plt.figure()
         self.plotbands(self.truth[:self.nx-2], 'k.',label='True Reflectance')
-        self.plotbands(self.isofitMuPos[:self.nx-2],'r.', label='Isofit Posterior')
+        self.plotbands(self.isofitMuPos[:self.nx-2],'r.', label='MAP Estimate')
         self.plotbands(self.MCMCmean[:self.nx-2], 'b.',label='MCMC Posterior')
+        plt.gca().set_ylim(bottom=0)
         plt.xlabel('Wavelength')
         plt.ylabel('Reflectance')
         plt.title('Posterior Mean - Surface Reflectance')
@@ -78,42 +80,13 @@ class ResultPlot:
         plt.legend()
         plt.savefig(self.resultsDir + 'reflMean.png', dpi=300)
 
-        plt.figure()
-        # plt.plot(self.truth[self.nx-2], self.truth[self.nx-1], 'bo',label='True Reflectance')
-        plt.plot(self.mu_x[self.nx-2], self.mu_x[self.nx-1], 'k.', markersize=12, label='Prior')
-        plt.plot(self.isofitMuPos[self.nx-2],self.isofitMuPos[self.nx-1],'r.', markersize=12, label='Isofit Posterior')
-        plt.plot(self.MCMCmean[self.nx-2], self.MCMCmean[self.nx-1], 'bx',markersize=12, label='MCMC Posterior')
-        plt.xlabel('AOT550')
-        plt.ylabel('H2OSTR')
-        plt.title('Posterior Mean - Atmospheric Parameters')
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.resultsDir + 'atmMean.png', dpi=300)
-
-        # bar graph of atm parameter variances
-        # isofitErrorAtm = abs(self.isofitMuPos[self.nx-2:] - self.truth[self.nx-2:]) / abs(self.truth[self.nx-2:])
-        # mcmcErrorAtm = abs(self.MCMCmean[self.nx-2:] - self.truth[self.nx-2:]) / abs(self.truth[self.nx-2:])
-        # labels = ['425 - AOD550', '426 - H2OSTR']
-        # x = np.arange(len(labels))  # the label locations
-        # width = 0.175
-        # fig, ax = plt.subplots()
-        # rects2 = ax.bar(x - width, isofitErrorAtm, width, label='Isofit Posterior')
-        # rects4 = ax.bar(x + width, mcmcErrorAtm, width, label='MCMC Posterior')
-        # ax.set_yscale('log')
-        # ax.set_ylabel('Relative Error')
-        # ax.set_title('Error in Atm Parameters')
-        # ax.set_xticks(x)
-        # ax.set_xticklabels(labels)
-        # ax.legend()
-        # fig.savefig(self.resultsDir + 'atmError.png', dpi=300)
-
-        # variance plot
+        # refl var
         priorVar = np.diag(self.gamma_x)
         isofitVar = np.diag(self.isofitGammaPos)
         MCMCVar = np.diag(self.MCMCcov)
         plt.figure()
         self.plotbands(priorVar[:self.nx-2], 'k.',label='Prior', axis='semilogy')
-        self.plotbands(isofitVar[:self.nx-2],'r.', label='Isofit Posterior', axis='semilogy')
+        self.plotbands(isofitVar[:self.nx-2],'r.', label='MAP Estimate', axis='semilogy')
         self.plotbands(MCMCVar[:self.nx-2], 'b.',label='MCMC Posterior', axis='semilogy')
         plt.xlabel('Wavelength')
         plt.ylabel('Variance')
@@ -122,28 +95,41 @@ class ResultPlot:
         plt.legend()
         plt.savefig(self.resultsDir + 'reflVar.png', dpi=300)
 
-        # bar graph of atm parameter variances
-        labels = ['Aerosol', 'H2OSTR']
-        x = np.arange(len(labels))  # the label locations
-        width = 0.175
-        fig, ax = plt.subplots()
-        rects1 = ax.bar(x - width, priorVar[self.nx-2:], width, color='k', label='Prior')
-        rects2 = ax.bar(x, isofitVar[self.nx-2:], width, color='r', label='Isofit Posterior')
-        rects4 = ax.bar(x + width, MCMCVar[self.nx-2:], width, color='b', label='MCMC Posterior')
-        ax.set_yscale('log')
-        ax.set_ylabel('Variance')
-        ax.set_title('Posterior Variance - Atmospheric Parameters')
-        ax.set_xticks(x)
-        ax.set_xticklabels(labels)
-        ax.legend()
-        fig.savefig(self.resultsDir + 'atmVar.png', dpi=300)
+        # # atm points
+        # plt.figure()
+        # # plt.plot(self.truth[self.nx-2], self.truth[self.nx-1], 'bo',label='True Reflectance')
+        # plt.plot(self.mu_x[self.nx-2], self.mu_x[self.nx-1], 'k.', markersize=12, label='Prior')
+        # plt.plot(self.isofitMuPos[self.nx-2],self.isofitMuPos[self.nx-1],'r.', markersize=12, label='Isofit Posterior')
+        # plt.plot(self.MCMCmean[self.nx-2], self.MCMCmean[self.nx-1], 'bx',markersize=12, label='MCMC Posterior')
+        # plt.xlabel('AOT550')
+        # plt.ylabel('H2OSTR')
+        # plt.title('Posterior Mean - Atmospheric Parameters')
+        # plt.grid()
+        # plt.legend()
+        # plt.savefig(self.resultsDir + 'atmMean.png', dpi=300)
+
+        # # bar graph of atm parameter variances
+        # labels = ['Aerosol', 'H2OSTR']
+        # x = np.arange(len(labels))  # the label locations
+        # width = 0.175
+        # fig, ax = plt.subplots()
+        # ax.bar(x - width, priorVar[self.nx-2:], width, color='k', label='Prior')
+        # ax.bar(x, isofitVar[self.nx-2:], width, color='r', label='Isofit Posterior')
+        # ax.bar(x + width, MCMCVar[self.nx-2:], width, color='b', label='MCMC Posterior')
+        # ax.set_yscale('log')
+        # ax.set_ylabel('Variance')
+        # ax.set_title('Posterior Variance - Atmospheric Parameters')
+        # ax.set_xticks(x)
+        # ax.set_xticklabels(labels)
+        # ax.legend()
+        # fig.savefig(self.resultsDir + 'atmVar.png', dpi=300)
     
     def plotError(self):
 
         plt.figure()
         isofitError = abs(self.isofitMuPos[:self.nx-2] - self.truth[:self.nx-2]) / abs(self.truth[:self.nx-2])
         mcmcError = abs(self.MCMCmean[:self.nx-2] - self.truth[:self.nx-2]) / abs(self.truth[:self.nx-2])
-        self.plotbands(isofitError,'r.', label='Isofit Posterior',axis='semilogy')
+        self.plotbands(isofitError,'r.', label='MAP Estimate',axis='semilogy')
         self.plotbands(mcmcError, 'b.',label='MCMC Posterior',axis='semilogy')
         plt.xlabel('Wavelength')
         plt.ylabel('Relative Error')
@@ -152,21 +138,21 @@ class ResultPlot:
         plt.legend()
         plt.savefig(self.resultsDir + 'reflError.png', dpi=300)
 
-        plt.figure()
-        isofitVar = np.diag(self.isofitGammaPos[:,:self.nx-2][:self.nx-2,:])
-        mcmcVar = np.diag(self.MCMCcov[:,:self.nx-2][:self.nx-2,:])
-        isofitMatOper = s.linalg.sqrtm(np.linalg.inv(np.diag(isofitVar)))
-        mcmcMatOper = s.linalg.sqrtm(np.linalg.inv(np.diag(mcmcVar)))
-        isofitWeightError = isofitMatOper @ (self.isofitMuPos[:self.nx-2] - self.truth[:self.nx-2])
-        mcmcWeightError = mcmcMatOper @ (self.MCMCmean[:self.nx-2] - self.truth[:self.nx-2])
-        self.plotbands(abs(isofitWeightError),'r.', label='Isofit Posterior',axis='semilogy')
-        self.plotbands(abs(mcmcWeightError), 'b.',label='MCMC Posterior',axis='semilogy')
-        plt.xlabel('Wavelength')
-        plt.ylabel('Error Weighted by Marginal Variance')
-        plt.title('Weighted Error in Posterior Mean')
-        plt.grid()
-        plt.legend()
-        plt.savefig(self.resultsDir + 'reflWeightError.png', dpi=300)
+        # plt.figure()
+        # isofitVar = np.diag(self.isofitGammaPos[:,:self.nx-2][:self.nx-2,:])
+        # mcmcVar = np.diag(self.MCMCcov[:,:self.nx-2][:self.nx-2,:])
+        # isofitMatOper = s.linalg.sqrtm(np.linalg.inv(np.diag(isofitVar)))
+        # mcmcMatOper = s.linalg.sqrtm(np.linalg.inv(np.diag(mcmcVar)))
+        # isofitWeightError = isofitMatOper @ (self.isofitMuPos[:self.nx-2] - self.truth[:self.nx-2])
+        # mcmcWeightError = mcmcMatOper @ (self.MCMCmean[:self.nx-2] - self.truth[:self.nx-2])
+        # self.plotbands(abs(isofitWeightError),'r.', label='MAP Estimate',axis='semilogy')
+        # self.plotbands(abs(mcmcWeightError), 'b.',label='MCMC Posterior',axis='semilogy')
+        # plt.xlabel('Wavelength')
+        # plt.ylabel('Error Weighted by Marginal Variance')
+        # plt.title('Weighted Error in Posterior Mean')
+        # plt.grid()
+        # plt.legend()
+        # plt.savefig(self.resultsDir + 'reflWeightError.png', dpi=300)
 
     def contourRef(self, indset1=[20,80,140,230,280,380], indset2=[50,110,170,250,350,410], vis='contour'):
         
@@ -203,7 +189,8 @@ class ResultPlot:
     def contourAtm(self):
 
         fig, ax = plt.subplots(1, 1)
-        levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
+        # levs = [0, 0.05, 0.1, 0.2, 0.5, 1]
+        levs = [0.03, 0.14, 0.6, 1]
         
         ax, cfset = self.twoDimContour(self.nx-2, self.nx-1, ax, levs)
         ax.set_xlabel('AOD550')
@@ -234,7 +221,7 @@ class ResultPlot:
                 indY = indset2[j]
                 
                 ax[i,j] = self.twoDimCorr(indY, indX, ax[i,j])
-                # ax[i,j].set_aspect('equal','box')
+                ax[i,j].set_aspect('equal', adjustable='box')
                 if j == 0:
                     ax[i,j].set_ylabel(r'$\lambda = $' + str(self.wavelengths[indset1[i]]) + ' nm')
                 if i == n-1:
@@ -293,8 +280,11 @@ class ResultPlot:
         ymin, ymax = min(min(y), isofitPosY), max(max(y), isofitPosY)
 
         if indX < self.nx-2 and indY < self.nx-2:
-            xmin, xmax = min(xmin, self.truth[indX]), max(xmax, self.truth[indX])
-            ymin, ymax = min(ymin, self.truth[indY]), max(ymax, self.truth[indY])
+            xmin, xmax = min(xmin, self.truth[indX])*0.98, max(xmax, self.truth[indX])*1.02
+            ymin, ymax = min(ymin, self.truth[indY])*0.98, max(ymax, self.truth[indY])*1.02
+        if indX >= self.nx-2 and indY >= self.nx-2:
+            xmin, xmax = 0, 0.3
+            # ymin, ymax = 1.3, 1.5
 
         # Peform the kernel density estimate
         xx, yy = np.mgrid[xmin:xmax:50j, ymin:ymax:50j]
@@ -304,13 +294,10 @@ class ResultPlot:
         f = np.reshape(kernel(positions).T, xx.shape)
         f = f / np.max(f) # normalize
 
-        ax.set_xlim(xmin, xmax)
-        ax.set_ylim(ymin, ymax)
+        # ax.set_xlim(xmin, xmax)
+        # ax.set_ylim(ymin, ymax)
 
-        # Contourf plot
-        cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
-        cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
-        # ax.clabel(cset, levs, fontsize='smaller')
+        
 
         # plot truth, isofit, and mcmc 
         meanIsofit = np.array([isofitPosX, isofitPosY])
@@ -319,6 +306,11 @@ class ResultPlot:
             ax.plot(self.truth[indX], self.truth[indY], 'go', label='Truth', markersize=10)  
         # ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
         ax.plot(meanMCMC[0], meanMCMC[1], 'kx', label='MCMC', markersize=12)
+
+        # Contourf plot
+        cfset = ax.contourf(xx, yy, f, levels=levs, cmap='Blues') 
+        cset = ax.contour(xx, yy, f, levels=levs, colors='k') 
+        # ax.clabel(cset, levs, fontsize='smaller')
 
         meanIsofit = np.array([self.isofitMuPos[indX], self.isofitMuPos[indY]])
         covIsofit = self.isofitGammaPos[np.ix_([indX,indY],[indX,indY])]
@@ -334,7 +326,6 @@ class ResultPlot:
 
 
     def twoDimCorr(self, indX, indY, ax):
-        x_vals = self.x_plot
         meanzero = np.zeros(2)
         corrIsofit = self.isofitCorr[np.ix_([indX,indY],[indX,indY])]
         corrMCMC = self.MCMCCorr[np.ix_([indX,indY],[indX,indY])]
