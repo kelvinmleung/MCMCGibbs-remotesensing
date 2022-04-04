@@ -28,7 +28,8 @@ for case in cases:
     # p.plotError()
     # p.contourRef(vis='contour')
     # p.contourAtm()
-    # p.corrRef(indset1=[20,40,60,80,100], indset2=[30,45,52,58,62,66,72,75,79])
+    # # p.corrRef(indset1=[20,40,60,80,100], indset2=[30,45,52,58,62,66,72,75,79])
+    # p.corrRef(indset1=[20,40,60], indset2=[30,45,52,58,62,80])
 
     # a.traceRef()
     # a.traceAtm()
@@ -39,7 +40,7 @@ for case in cases:
     # a.ESSanalysis()
     # a.MCMCIsofitEig()
     # a.comparePosCov()
-    a.qqRef()
+    # a.qqRef()
     # a.qqAtm()
     # a.KStestRef()
 

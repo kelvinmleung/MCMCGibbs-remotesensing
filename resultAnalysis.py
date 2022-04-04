@@ -570,7 +570,9 @@ class ResultAnalysis:
         # trace
         traceIsofit = np.trace(covIsofit)
         traceMCMC = np.trace(covMCMC)
-        traceDiff = abs(traceIsofit - traceMCMC) / abs(traceMCMC)
+        tracePrior = np.trace(covPrior)
+        traceMIM = abs(traceIsofit - traceMCMC) / abs(traceMCMC)
+        traceMIP = abs(traceIsofit - traceMCMC) / abs(tracePrior)
 
         # log determinant
         sgn1, detIsofit = np.linalg.slogdet(covIsofit)
@@ -580,7 +582,9 @@ class ResultAnalysis:
         # Frobenius norm
         normIsofit = np.linalg.norm(covIsofit)
         normMCMC = np.linalg.norm(covMCMC)
-        normDiff = abs(normIsofit - normMCMC) / abs(normMCMC)
+        normPrior = np.linalg.norm(covPrior)
+        normMIM = abs(normIsofit - normMCMC) / abs(normMCMC)
+        normMIP = abs(normIsofit - normMCMC) / abs(normPrior)
 
         # forstner distance
         forstner = 0
@@ -597,12 +601,14 @@ class ResultAnalysis:
             forstPr = forstPr + (np.log(eigs[j])) ** 2
         forstPr = np.sqrt(forstPr)
 
-        print('\t\t Isofit \t MCMC \t Percent Diff')
+        print('\t\t\t Isofit \t MCMC \t Prior \t Percent Diff')
         # print('Determinant:   %10.3E  %10.3E  %10.3f' % (detIsofit, detMCMC, detDiff))
-        print('Trace:         %10.3E  %10.3E  %10.3f' % (traceIsofit, traceMCMC, traceDiff))
-        print('Frob Norm:     %10.3E  %10.3E  %10.3f' % (normIsofit, normMCMC, normDiff))
-        print('Log Det:       %10.3E  %10.3E        ' % (detIsofit, detMCMC))
-        print('Forstner:              %10.3f  %10.3f' % (forstner, forstner/forstPr))
+        print('Trace (div MCMC):      %10.3E  %10.3E  %10.3E  %10.3f' % (traceIsofit, traceMCMC, tracePrior, traceMIM))
+        print('Trace (div prior):     %10.3E  %10.3E  %10.3E  %10.3f' % (traceIsofit, traceMCMC, tracePrior, traceMIP))
+        print('Frob Norm (div MCMC):  %10.3E  %10.3E  %10.3E  %10.3f' % (normIsofit, normMCMC, normPrior, normMIM))
+        print('Frob Norm (div prior): %10.3E  %10.3E  %10.3E  %10.3f' % (normIsofit, normMCMC, normPrior, normMIP))
+        print('Log Det:               %10.3E  %10.3E                ' % (detIsofit, detMCMC))
+        print('Forstner (unnormalized and div Prior): %10.3f  %10.3f' % (forstner, forstner/forstPr))
 
     
     
