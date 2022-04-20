@@ -226,6 +226,8 @@ class ResultAnalysis:
         print('AOD ESS:', essSpec[-2])
         print('H2O ESS:', essSpec[-1])
 
+    
+
     # def shrinkCov(self):
     #     # usable bands: 11-190, 221-286, 341-420
     #     beg = [11,100,221,341]
@@ -340,6 +342,38 @@ class ResultAnalysis:
         plt.legend()
         fig.savefig(self.resultsDir + 'eigdir.png', dpi=300)  
 
+    def cov1varInCov2Dir(self, cov1full, cov2full, name1, name2):
+        # covIsofit = self.isofitGammaPos[:,self.bands][self.bands,:] 
+        # covMCMC = self.MCMCcov[:,self.bands][self.bands,:] 
+
+        cov1 = cov1full[:,self.bands][self.bands,:] 
+        cov2 = cov2full[:,self.bands][self.bands,:] 
+
+        eigs, eigvec = s.linalg.eigh(cov1, eigvals_only=False)
+        eigs = np.flip(eigs, axis=0)
+        eigvec = np.flip(eigvec, axis=1)
+        fig = plt.figure()
+        plt.semilogy(eigs,'b.')
+        plt.title('Eigenspectrum of ' + name1 + ' covariance')
+
+        n = len(eigs)
+        var = np.zeros(n)
+        for i in range(n):
+            var[i] = eigvec[:,i].T @ cov2 @ eigvec[:,i]
+        fig = plt.figure()
+        plt.semilogy(var,'b.')
+        plt.ylabel('Variance')
+        plt.xlabel('Eigendirection')
+        plt.title('Variance of '+ name2 + ' in ' + name1 + ' direction')
+        
+
+    def MCMCVarInIsofitdir(self):
+        self.cov1varInCov2Dir(self.isofitGammaPos, self.MCMCcov, 'Isofit', 'MCMC')
+    def isofitVarInMCMCdir(self):
+        self.cov1varInCov2Dir(self.MCMCcov, self.isofitGammaPos, 'MCMC', 'Isofit')
+        
+
+
         
 
     def MCMCIsofitEig(self):
@@ -356,7 +390,6 @@ class ResultAnalysis:
         plt.title('Eigenspectrum of Isofit vs MCMC Covariances')
         plt.xlabel('Large eig signifies larger Isofit variance')
         fig.savefig(self.resultsDir + 'eigval.png', dpi=300)  
-
 
         fig = plt.figure()
         fig.set_size_inches(8, 3)

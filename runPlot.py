@@ -15,34 +15,34 @@ p = ResultPlot(a.exportParam())
 
 # CHANGE COLOURS
 
-## For Paper and Conference ##
-cases = ['177']#,'306','mars','dark']
-for case in cases:
-    resultsDir = '../resultsGibbs/' + case + '_SNR50_RandWalkIsofitCovEps0_11_2M/'
-    # resultsDir = '../resultsGibbs/177_SNR50_RandWalkIsofitCovEps0_11_1M_noThin/'
-    setupDir = 'setup/ang20140612/' #'setup/ang20170228/' #
-    a = ResultAnalysis(setupDir, resultsDir)
-    p = ResultPlot(a.exportParam()) 
-    # p.plotRadiance()
-    # p.plotPosterior()
-    # p.plotError()
-    # p.contourRef(vis='contour')
-    # p.contourAtm()
-    # # p.corrRef(indset1=[20,40,60,80,100], indset2=[30,45,52,58,62,66,72,75,79])
-    # p.corrRef(indset1=[20,40,60], indset2=[30,45,52,58,62,80])
+# ## For Paper and Conference ##
+# cases = ['177']#,'306','mars','dark']
+# for case in cases:
+#     resultsDir = '../resultsGibbs/' + case + '_SNR50_RandWalkIsofitCovEps0_11_2M/'
+#     # resultsDir = '../resultsGibbs/177_SNR50_RandWalkIsofitCovEps0_11_1M_noThin/'
+#     setupDir = 'setup/ang20140612/' #'setup/ang20170228/' #
+#     a = ResultAnalysis(setupDir, resultsDir)
+#     p = ResultPlot(a.exportParam()) 
+#     # p.plotRadiance()
+#     # p.plotPosterior()
+#     # p.plotError()
+#     # p.contourRef(vis='contour')
+#     # p.contourAtm()
+#     # # p.corrRef(indset1=[20,40,60,80,100], indset2=[30,45,52,58,62,66,72,75,79])
+#     # p.corrRef(indset1=[20,40,60], indset2=[30,45,52,58,62,80])
 
-    # a.traceRef()
-    # a.traceAtm()
-    # a.plotacceptance()
-    # a.plotlogpos()
+#     # a.traceRef()
+#     # a.traceAtm()
+#     # a.plotacceptance()
+#     # a.plotlogpos()
 
-    # # a.genESSspectrum()
-    # a.ESSanalysis()
-    # a.MCMCIsofitEig()
-    # a.comparePosCov()
-    # a.qqRef()
-    # a.qqAtm()
-    # a.KStestRef()
+#     # a.genESSspectrum()
+#     # a.ESSanalysis()
+#     # # a.MCMCIsofitEig()
+#     a.comparePosCov()
+#     # a.qqRef()
+#     # a.qqAtm()
+#     # a.KStestRef()
 
 
 # # Results Visualization
@@ -62,7 +62,7 @@ for case in cases:
 # a.plotacceptance()
 # a.plotlogpos()
 
-# # a.genESSspectrum()
+# a.genESSspectrum()
 # a.ESSanalysis()
 # a.MCMCIsofitEig()
 # a.comparePosCov()
@@ -73,6 +73,7 @@ for case in cases:
 # a.KStestRef()
 
 # a.MCMCIsofitEigShrink()
-
+a.isofitVarInMCMCdir()
+a.MCMCVarInIsofitdir()
 
 plt.show()
