@@ -2,7 +2,7 @@ import sys, os, json
 import numpy as np
 import scipy as s
 import scipy.stats as st
-from scipy.stats import multivariate_normal, gaussian_kde, probplot, kstest, norm
+from scipy.stats import multivariate_normal, gaussian_kde, probplot, kstest, norm, truncnorm
 import matplotlib.pyplot as plt
 from matplotlib import ticker, cm
 from matplotlib.patches import Ellipse
@@ -135,8 +135,7 @@ class ResultAnalysis:
             # if (wl[i] > 380 and wl[i] < 1300) or (wl[i] > 1450 and wl[i] < 1780) or (wl[i] > 1950 and wl[i] < 2450):
             if (wl[i] > w[0][0] and wl[i] < w[0][1]) or (wl[i] > w[1][0] and wl[i] < w[1][1]) or (wl[i] > w[2][0] and wl[i] < w[2][1]):
                 bands = bands + [i]
-        return bands
-        
+        return bands        
     
     def quantDiagnostic(self):
         ## Error for reflectance parameters
@@ -352,26 +351,107 @@ class ResultAnalysis:
         eigs, eigvec = s.linalg.eigh(cov1, eigvals_only=False)
         eigs = np.flip(eigs, axis=0)
         eigvec = np.flip(eigvec, axis=1)
-        fig = plt.figure()
-        plt.semilogy(eigs,'b.')
-        plt.title('Eigenspectrum of ' + name1 + ' covariance')
+        # fig = plt.figure()
+        # plt.semilogy(eigs,'b.')
+        # plt.title('Eigenspectrum of ' + name1 + ' covariance')
 
         n = len(eigs)
         var = np.zeros(n)
         for i in range(n):
             var[i] = eigvec[:,i].T @ cov2 @ eigvec[:,i]
-        fig = plt.figure()
-        plt.semilogy(var,'b.')
-        plt.ylabel('Variance')
-        plt.xlabel('Eigendirection')
-        plt.title('Variance of '+ name2 + ' in ' + name1 + ' direction')
+        # fig = plt.figure()
+        # plt.semilogy(var,'b.')
+        # plt.ylabel('Variance')
+        # plt.xlabel('Eigendirection')
+        # plt.title('Variance of '+ name2 + ' in ' + name1 + ' direction')
+        return eigs, eigvec, var
         
+    # def plotbandsEig(self, y, linestyle, linewidth=1, alpha=1, label=''):
+    #     wl = self.wavelengths
+    #     r1, r2, r3 = self.plotIndices
+    #     plt.plot(wl[r1[0]:r1[1]], y, linestyle, linewidth=linewidth, alpha=alpha, label=label)
+    #     plt.plot(wl[r2[0]:r2[1]], y, linestyle, linewidth=linewidth, alpha=alpha)
+    #     plt.plot(wl[r3[0]:r3[1]], y, linestyle, linewidth=linewidth, alpha=alpha)
+    #     return 
 
-    def MCMCVarInIsofitdir(self):
-        self.cov1varInCov2Dir(self.isofitGammaPos, self.MCMCcov, 'Isofit', 'MCMC')
-    def isofitVarInMCMCdir(self):
-        self.cov1varInCov2Dir(self.MCMCcov, self.isofitGammaPos, 'MCMC', 'Isofit')
+    def MCMCIsofitCompare(self):
+        # MCMC variance in Isofit direction
+        eigIsofit, eigvecIsofit, varMCMCinIsofit = self.cov1varInCov2Dir(self.isofitGammaPos, self.MCMCcov, 'Isofit', 'MCMC')
+        # Isofit variance in MCMC direction
+        eigMCMC, eigvecMCMC, varIsofitinMCMC = self.cov1varInCov2Dir(self.MCMCcov, self.isofitGammaPos, 'MCMC', 'Isofit')
+
+        n = len(eigMCMC)
+
+        fig = plt.figure()
+        plt.semilogy(eigMCMC,'b.')
+        plt.ylabel('Eigenvalue')
+        plt.xlabel('Eigendirection')
+        plt.title('Eigenvalues of MCMC Covariance')
+
+
+        fig = plt.figure()
+        plt.semilogy(varIsofitinMCMC / eigMCMC,'b.')
+        plt.ylabel(r'$v_{MCMC,i}^\top \Gamma_{Laplace} v_{MCMC,i} \,\, / \,\, \lambda_{MCMC,i}$')
+        plt.xlabel('Eigendirection')
+        plt.title('Normalized variance of Isofit in directions of MCMC Covariance')
+
+        # normVarIsofitinMCMC = varIsofitinMCMC / eigMCMC
+        # print(normVarIsofitinMCMC[:10])
+
+        # fig = plt.figure()
+        # plt.semilogy(varMCMCinIsofit / eigIsofit,'b.')
+        # plt.ylabel(r'$v_{i,iso}^\top \Gamma_{MCMC} v_{i,iso} \,\, / \,\,  \lambda_{i,iso}$')
+        # plt.xlabel('Eigendirection')
+        # plt.title('Normalized variance of MCMC in Isofit direction')
+
         
+        fig = plt.figure()
+        for i in range(5):
+            # plt.plot(self.wavelengths[self.bands], eigvecMCMC[:,i],'-', alpha=0.5, label=i)
+            if i == 0:
+                plt.plot(self.wavelengths[self.bands], eigvecMCMC[:,i],'r-', alpha=1, label=i+1)
+            elif i == 4:
+                plt.plot(self.wavelengths[self.bands], eigvecMCMC[:,i],'b-', alpha=1, label=i+1)
+            else:
+                plt.plot(self.wavelengths[self.bands], eigvecMCMC[:,i],'-', alpha=0.5, label=i+1)
+        # self.plotbandsEig(eigvecMCMC[:,0],'r-', linewidth=1,  alpha=1, label=1)
+        # self.plotbandsEig(eigvecMCMC[:,1],'g-', linewidth=1,  alpha=0.5, label=2) 
+        # self.plotbandsEig(eigvecMCMC[:,2],'c-', linewidth=1,  alpha=0.5, label=3)
+        # self.plotbandsEig(eigvecMCMC[:,3],'m-', linewidth=1,  alpha=0.5, label=4)
+        # self.plotbandsEig(eigvecMCMC[:,4],'b-', linewidth=1,  alpha=1, label=5)
+        plt.ylim([-0.3,0.3])
+        plt.xlabel('Wavelength [nm]')
+        plt.title('Top eigenvectors of MCMC covariance')
+        plt.legend()
+
+
+        fig = plt.figure()
+        for i in range(1,6):
+            # plt.plot(self.wavelengths[self.bands], eigvecMCMC[:,i],'-', alpha=0.5, label=i)
+            plt.plot(eigvecMCMC[:,-i],'-', alpha=0.5, label=-i)
+        plt.xlabel('Wavelength')
+        plt.title('Eigenvectors of MCMC covariance - Last 5')
+        plt.legend()
+
+        fig = plt.figure()
+        plt.plot(eigvecMCMC[:,0],'-', alpha=0.8, label=0)
+        plt.plot(eigvecMCMC[:,4],'-', alpha=0.8, label=4)
+        plt.plot(eigvecMCMC[:,41],'-', alpha=0.4, label=41)
+        plt.plot(eigvecMCMC[:,43],'-', alpha=0.4, label=43)
+        plt.xlabel('Wavelength')
+        plt.title('Eigenvectors of MCMC covariance - Selected')
+        plt.legend()
+
+        # # eigenspace around the dip (index 40-54)
+        # eigspace4055 = np.zeros(n)
+        # for i in range(40,55):
+        #     eigspace4055 = eigMCMC[i] * eigvecMCMC[:,i]**2
+        # fig = plt.figure()
+        # plt.semilogy(eigspace4055,'-', alpha=0.8)
+        # plt.xlabel('Wavelength')
+        # plt.ylabel(r'$\sum_{i=40}^{54} \lambda_{i,MCMC} v_{i,MCMC}^2$')
+        # plt.title('Eigenspace index 40-54')
+        # plt.legend()
 
 
         
@@ -544,7 +624,7 @@ class ResultAnalysis:
     # def qqRef(self, indset=[20,50,80,110,140,170,230,250,280,250,380,410]):
     def qqRef(self, indset=[20,50,80,140,270,400]):
 
-        n = int(len(indset)/3)
+        n = int(len(indset)/2)
         m = int(len(indset)/n)
         fig, ax = plt.subplots(n, m)
         
@@ -553,20 +633,29 @@ class ResultAnalysis:
                 ind = indset[i*m + j]
                 probplot(self.x_plot[ind,::10], dist='norm', plot=ax[i,j])
                 ax[i,j].set_title(r'$\lambda = $' + str(self.wavelengths[ind]) + ' nm')
+                ax[i,j].set_xlabel('')
+                ax[i,j].set_ylabel('')
+                
+        fig.supxlabel('Theoretical Quantiles')
+        fig.supylabel('Ordered Values')
 
         fig.suptitle('QQ Plots - Reflectances')
-        fig.set_size_inches(10, 6)
+        fig.set_size_inches(5, 8)
         fig.tight_layout()
         fig.savefig(self.resultsDir + 'qqRef.png', dpi=300)      
 
     def qqAtm(self):
 
         fig, ax = plt.subplots(1,2)
-
-        probplot(self.x_plot[self.nx-2,::10], dist='norm', plot=ax[0])
+        # probplot(self.x_plot[self.nx-2,::10], dist='norm', plot=ax[0])
+        # ax[0].set_title('AOD550')
+        lowAOD = -self.MCMCmean[self.nx-2] / np.sqrt(self.MCMCcov[self.nx-2, self.nx-2])
+        truncnormDistAOD = truncnorm(lowAOD, np.inf)
+        lowH2O = -self.MCMCmean[self.nx-1] / np.sqrt(self.MCMCcov[self.nx-1, self.nx-1])
+        truncnormDistH2O = truncnorm(lowH2O, np.inf)
+        probplot(self.x_plot[self.nx-2,::10], dist=truncnormDistAOD, plot=ax[0])
         ax[0].set_title('AOD550')
-
-        probplot(self.x_plot[self.nx-1,::10], dist='norm', plot=ax[1])
+        probplot(self.x_plot[self.nx-1,::10], dist=truncnormDistH2O, plot=ax[1])
         ax[1].set_title('H20STR')
 
         fig.set_size_inches(8, 4)

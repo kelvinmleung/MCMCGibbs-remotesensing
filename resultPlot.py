@@ -196,10 +196,11 @@ class ResultPlot:
         ax.set_xlabel('AOD550')
         ax.set_ylabel('H20STR')
         ax.set_xlim([0,0.3])
+        ax.legend()
         fig.suptitle('Contour Plot for Atmospheric Parameters')
 
         handles, labels = ax.get_legend_handles_labels()
-        fig.legend(handles, labels, loc='center right')
+        # fig.legend(handles, labels, loc='center right')
         fig.colorbar(cfset)
         fig.savefig(self.resultsDir + 'atmcontour.png', dpi=300)
 
@@ -233,7 +234,7 @@ class ResultPlot:
         fig.legend(handles, labels, loc='center right')
         # fig.subplots_adjust(right=0.83)
         # fig.tight_layout()
-        fig.set_size_inches(18, 10)
+        fig.set_size_inches(6, 8)
         fig.savefig(self.resultsDir + '2Dcorr.png', dpi=300)
 
     def drawEllipse(self, mean, cov, ax, colour):
@@ -314,7 +315,7 @@ class ResultPlot:
 
         meanIsofit = np.array([self.isofitMuPos[indX], self.isofitMuPos[indY]])
         covIsofit = self.isofitGammaPos[np.ix_([indX,indY],[indX,indY])]
-        ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP', markersize=12)
+        ax.plot(meanIsofit[0], meanIsofit[1], 'rx', label='MAP/Laplace', markersize=12)
         self.drawEllipse(meanIsofit, covIsofit, ax, colour='red')
             
         return ax, cfset
